@@ -25,6 +25,12 @@ This project focuses on methods to color images using a reference image. This mo
 ## Methodology
 *dataset, model architecture, etc.*
 
+### Dataset
+For our project, we used images from the ImageNet database. For training, we needed a pair of colored images, T_ab and R_ab, where T is the monochromatic image stripped to its luminance channel L, and R is the reference image. Although we input T_l and R_ab into the model, T_ab is still used as a ground truth in the training process. 
+
+### Model Architecture
+The model architecture is split into two main sub networks. GCFN (Gated color fusion sub-network) fuses the semantic and color distribution information in the reference image, and MCN uses transpose convolution in order to color the monochrome image using information gathered from the GCFN. 
+
 ## Results 
 
 ## Discussion
