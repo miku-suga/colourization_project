@@ -31,6 +31,11 @@ For our project, we used images from the ImageNet database. For training, we nee
 ### Model Architecture
 The model architecture is split into two main sub networks. GCFN (Gated color fusion sub-network) fuses the semantic and color distribution information in the reference image, and MCN uses transpose convolution in order to color the monochrome image using information gathered from the GCFN. 
 
+#### GCFN
+The GCFN model is also split into two main parts, the Semantic Color assignment module and the Color distribution module. The output of the two modules are passed into the Gated fusion module, where it outputs the fused color feature M. The color distribution module uses convolution and spacial replication to output 3 feature matrices of different sizes from the histogram of the reference image. The semantic assignment module applies max pooling on the monochrome image to get the image input's class label G, applies concatnation and correlation function on the two feature matrices to get the correlation matrix C, and applies convolution on C, as well as the reference image in order to output three color feature matrices of different sizes. Finally, the gated fusion module takes in all six color feature matrices, as well as the correlation matrix (with convolution applied), and passes in the inputs through three gates in order to produce the fused color features M_1, M_2, and M_3. Each gate takes in two color features of the same size, as well as the downsized correlation matrix.   
+
+#### MCN
+
 ## Results 
 
 ## Discussion
