@@ -35,6 +35,10 @@ The model architecture is split into two main sub networks. GCFN (Gated color fu
 The GCFN model is also split into two main parts, the Semantic Color assignment module and the Color distribution module. The output of the two modules are passed into the Gated fusion module, where it outputs the fused color feature M. The color distribution module uses convolution and spacial replication to output 3 feature matrices of different sizes from the histogram of the reference image. The semantic assignment module applies max pooling on the monochrome image to get the image input's class label G, applies concatnation and correlation function on the two feature matrices to get the correlation matrix C, and applies convolution on C, as well as the reference image in order to output three color feature matrices of different sizes. Finally, the gated fusion module takes in all six color feature matrices, as well as the correlation matrix (with convolution applied), and passes in the inputs through three gates in order to produce the fused color features M_1, M_2, and M_3. Each gate takes in two color features of the same size, as well as the downsized correlation matrix.   
 
 #### MCN
+The MCN model has an encoder decoder architecture where the decoder segment is split into three parts. After the reference lumniance channel and target lumniance channel is passed in as inputs, the encoder model (consisting of 4 conv and 2 diluted conv layers) outputs the features of both inputs. Before each decoder block, the fused color features is element-wise added on to the target image, and inside each decoder block, the input monochrome image is passed through 1 conv, 2 residual, and 1 deconv layer. In the end, the MCN model outputs 3 2-channel tensors that are passed into the loss function. 
+
+#### Loss Function
+The loss function consists of 5 individual mini-loss functions, and are weighted appropriately and summed. The 5 mini-loss functions are as follows: *smooth-L1 loss*, *GAN's loss*, *color histogram loss*, *classification loss*, and the *tv regularizer*. 
 
 ## Results 
 
