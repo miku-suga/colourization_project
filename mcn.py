@@ -73,8 +73,14 @@ class Decoder1(tf.keras.Model):
         """ Init layers """
         self.resconv_1 = tf.keras.layers.Conv2D(512, 3, activation='relu', padding='same')
         self.batch_norm_1 = tf.keras.layers.BatchNormalization()
-        """ add 2 resblocks """
-        """ conv2dtranspose here """
+        self.deconv_up = tf.keras.layers.Conv2DTranspose(256, 4, strides=2, padding='same')
+        self.deconv_short = tf.keras.layers.Conv2D(256, 3, padding='same') 
+        self.relu_1 = tf.keras.layers.ReLU()
+        self.deconv_1 = tf.keras.layers.Conv2D(256, 3, padding='same')
+        self.relu_2 = tf.keras.layers.ReLU()
+        self.deconv_2 = tf.keras.layers.Conv2D(256, 3, padding='same')
+        self.relu_3 = tf.keras.layers.ReLU()
+        self.batch_norm_1 = tf.keras.layers.BatchNormalization()
 
     def call(self, t_l, m_1, is_testing=False):
         pass
@@ -93,8 +99,12 @@ class Decoder2(tf.keras.Model):
         """ Init layers """
         self.resconv_1 = tf.keras.layers.Conv2D(256, 3, activation='relu', padding='same')
         self.batch_norm_1 = tf.keras.layers.BatchNormalization()
-        """ add 2 resblocks """
-        """ conv2dtranspose here """
+        self.deconv_up = tf.keras.layers.Conv2DTranspose(128, 4, strides=2, padding='same')
+        self.deconv_short = tf.keras.layers.Conv2D(128, 3, padding='same') 
+        self.relu_1 = tf.keras.layers.ReLU()
+        self.deconv = tf.keras.layers.Conv2D(128, 3, padding='same') 
+        self.relu_2 = tf.keras.layers.ReLU()
+        self.batch_norm_1 = tf.keras.layers.BatchNormalization()
 
     def call(self, t_l, m_2, is_testing=False):
         pass
@@ -113,8 +123,11 @@ class Decoder3(tf.keras.Model):
         """ Init layers """
         self.resconv_1 = tf.keras.layers.Conv2D(128, 3, activation='relu', padding='same')
         self.batch_norm_1 = tf.keras.layers.BatchNormalization()
-        """ add 2 resblocks """
-        """ conv2dtranspose here """
+        self.deconv_up = tf.keras.layers.Conv2DTranspose(128, 4, strides=2, padding='same')
+        self.deconv_short = tf.keras.layers.Conv2D(128, 3, padding='same') 
+        self.relu = tf.keras.layers.ReLU()
+        self.deconv = tf.keras.layers.Conv2D(128, 3, padding='same') 
+        self.leaky_relu = tf.keras.layers.LeakyReLU()
 
     def call(self, t_l, m_3, is_testing=False):
         pass
