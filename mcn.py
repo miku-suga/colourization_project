@@ -50,10 +50,21 @@ class Encoder(tf.keras.Model):
         self.conv_4_3 = tf.keras.layers.Conv2D(512, 3, activation='relu', padding='same')
         self.batch_norm_4 = tf.keras.layers.BatchNormalization()
 
-        """ add dilation 1 """
+        self.padding_1 = tf.keras.layers.ZeroPadding2D(padding=(2,2))
+        self.conv_5_1 = tf.keras.layers.Conv2D(512, 3, dilation=2, activation='relu', padding='same')
+        self.padding_2 = tf.keras.layers.ZeroPadding2D(padding=(2,2))
+        self.conv_5_2 = tf.keras.layers.Conv2D(512, 3, dilation=2, activation='relu', padding='same')
+        self.padding_3 = tf.keras.layers.ZeroPadding2D(padding=(2,2))
+        self.conv_5_3 = tf.keras.layers.Conv2D(512, 3, dilation=2, activation='relu', padding='same')
+        self.batch_norm_5 = tf.keras.layers.BatchNormalization()
 
-        """ add dilation 2 """
-        
+        self.padding_4 = tf.keras.layers.ZeroPadding2D(padding=(2,2))
+        self.conv_6_1 = tf.keras.layers.Conv2D(512, 3, dilation=2, activation='relu', padding='same')
+        self.padding_5 = tf.keras.layers.ZeroPadding2D(padding=(2,2))
+        self.conv_6_2 = tf.keras.layers.Conv2D(512, 3, dilation=2, activation='relu', padding='same')
+        self.padding_6 = tf.keras.layers.ZeroPadding2D(padding=(2,2))
+        self.conv_6_3 = tf.keras.layers.Conv2D(512, 3, dilation=2, activation='relu', padding='same')
+        self.batch_norm_6 = tf.keras.layers.BatchNormalization()     
 
 
     def call(self, r_l, t_l, m_1, m_2, m_3, is_testing=False):
