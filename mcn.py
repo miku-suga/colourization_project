@@ -2,7 +2,24 @@ import tensorflow as tf
 import numpy as np
 from tensorflow.keras import Model
 
-""" Make Resblock Class hers """
+""" 
+    ResBlock
+    Input: some input x
+    Output: residual of x
+"""
+class ResBlock(tf.keras.Model):
+    def __init__(self, dim):
+        super(ResBlock, self).__init__()
+
+        """ Init layers """
+        self.conv_1 = tf.keras.layers.Conv2D(dim, 3, activation='relu', padding='same')
+        self.batch_norm_1 = tf.keras.layers.BatchNormalization()
+        self.conv_2 = tf.keras.layers.Conv2D(dim, 3, activation='relu', padding='same')
+        self.batch_norm_2 = tf.keras.layers.BatchNormalization()
+
+    def call(self, input):
+        return input + self.batch_norm_2(self.conv_2(self.batch_norm_1(self.conv_1(input))))
+
 
 """ 
     MCN Encoder 
@@ -11,11 +28,8 @@ from tensorflow.keras import Model
             lumniance channel of input image
 """
 class Encoder(tf.keras.Model):
-    def __init__(self, r_l, t_l, m_1, m_2, m_3):
+    def __init__(self):
         super(Encoder, self).__init__()
-        """ Init input matrices """
-        self.r_l = r_l
-        self.t_l = t_l
 
         """ Init layers """
         self.conv_1_1 = tf.keras.layers.Conv2D(64, 3, activation='relu', padding='same')
@@ -42,7 +56,7 @@ class Encoder(tf.keras.Model):
         
 
 
-    def call(self, inputs, is_testing=False):
+    def call(self, r_l, t_l, m_1, m_2, m_3, is_testing=False):
         pass
 
 """ 
@@ -53,19 +67,16 @@ class Encoder(tf.keras.Model):
             luminance channel of input image
 """
 class Decoder1(tf.keras.Model):
-    def __init__(self, t_l, m_1):
+    def __init__(self):
         super(Decoder1, self).__init__()
-        """ Init input matrices """
-        self.t_l = t_l
-        self.m_1 = m_1
 
         """ Init layers """
-        self.resconv_1 = tf.keras.layers.Conv2D(256, 3, activation='relu', padding='same')
+        self.resconv_1 = tf.keras.layers.Conv2D(512, 3, activation='relu', padding='same')
         self.batch_norm_1 = tf.keras.layers.BatchNormalization()
         """ add 2 resblocks """
         """ conv2dtranspose here """
 
-    def call(self, inputs, is_testing=False):
+    def call(self, t_l, m_1, is_testing=False):
         pass
 
 """ 
@@ -76,19 +87,16 @@ class Decoder1(tf.keras.Model):
             luminance channel of input image
 """
 class Decoder2(tf.keras.Model):
-    def __init__(self, t_l, m_2):
+    def __init__(self):
         super(Decoder2, self).__init__()
-        """ Init input matrices """
-        self.t_l = t_l
-        self.m_2 = m_2
 
         """ Init layers """
-        self.resconv_1 = tf.keras.layers.Conv2D(512, 3, activation='relu', padding='same')
+        self.resconv_1 = tf.keras.layers.Conv2D(256, 3, activation='relu', padding='same')
         self.batch_norm_1 = tf.keras.layers.BatchNormalization()
         """ add 2 resblocks """
         """ conv2dtranspose here """
 
-    def call(self, inputs, is_testing=False):
+    def call(self, t_l, m_2, is_testing=False):
         pass
 
 """ 
@@ -99,11 +107,8 @@ class Decoder2(tf.keras.Model):
             luminance channel of input image
 """
 class Decoder3(tf.keras.Model):
-    def __init__(self, t_l, m_3):
+    def __init__(self):
         super(Decoder3, self).__init__()
-        """ Init input matrices """
-        self.t_l = t_l
-        self.m_3 = m_3
 
         """ Init layers """
         self.resconv_1 = tf.keras.layers.Conv2D(128, 3, activation='relu', padding='same')
@@ -111,6 +116,6 @@ class Decoder3(tf.keras.Model):
         """ add 2 resblocks """
         """ conv2dtranspose here """
 
-    def call(self, inputs, is_testing=False):
+    def call(self, t_l, m_3, is_testing=False):
         pass
 

@@ -63,21 +63,20 @@ class SemanticAssignmentModule(tf.keras.Model):
             *these matrices are pre-spacial replication
 """
 class ColorDistributionModule(tf.keras.Model):
-    def __init__(self, r_hist):
+    def __init__(self):
         super(ColorDistributionModule, self).__init__()
-        """ Init input matrices """
-        self.r_hist = r_hist
-        self.in_dims = tf.get_shape(r_hist)[3]
+
+        self.kernel_size = 1
 
         """ Init layers """
-        self.conv_1_1 = tf.keras.layers.Conv2D(512, 1, activation='relu', padding='same')
-        self.conv_1_2 = tf.keras.layers.Conv2D(512, 1, activation='relu', padding='same')
-        self.conv_1_3 = tf.keras.layers.Conv2D(512, 1, activation='relu', padding='same')
+        self.conv_1_1 = tf.keras.layers.Conv2D(512, self.kernel_size, activation='relu', padding='same')
+        self.conv_1_2 = tf.keras.layers.Conv2D(512, self.kernel_size, activation='relu', padding='same')
+        self.conv_1_3 = tf.keras.layers.Conv2D(512, self.kernel_size, activation='relu', padding='same')
 
-        self.conv_2_1 = tf.keras.layers.Conv2D(512, 1, activation='relu', padding='same')
-        self.conv_2_2 = tf.keras.layers.Conv2D(256, 1, activation='relu', padding='same')
-        self.conv_2_3 = tf.keras.layers.Conv2D(128, 1, activation='relu', padding='same')
+        self.conv_2_1 = tf.keras.layers.Conv2D(512, self.kernel_size, activation='relu', padding='same')
+        self.conv_2_2 = tf.keras.layers.Conv2D(256, self.kernel_size, activation='relu', padding='same')
+        self.conv_2_3 = tf.keras.layers.Conv2D(128, self.kernel_size, activation='relu', padding='same')
 
-    def call(self, inputs, is_testing=False):
+    def call(self, r_hist, is_testing=False):
         pass
 
