@@ -37,19 +37,24 @@ class GatedFusionModule(tf.keras.Model):
             3 color feature matrices of different sizes
 """
 class SemanticAssignmentModule(tf.keras.Model):
-    def __init__(self, t_lum, r_lum, r_ab):
+    def __init__(self, height, width):
         super(SemanticAssignmentModule, self).__init__()
-        """ Init input matrices """
-        self.t_lum = t_lum
-        self.r_lum = r_lum
-        self.r_ab = r_ab
+        
+        self.height = height
+        self.width = width
 
-        """ Init layers """
+        self.kernel_size = 3
+        
+        self.rab_conv_1 = tf.keras.layers.Conv2D(64, self.kernel_size, activation='relu', padding='same')
+        self.rab_conv_2 = tf.keras.layers.Conv2D(128, self.kernel_size, strides=(2, 2), activation='relu', padding='same')
 
-    def call(self, inputs, is_testing=False):
+        self.fa_conv_1 = tf.keras.layers.Conv2D(128, self.kernel_size, strides=(2, 2), activation='relu', padding='same')
+        self.fa_conv_2 = tf.keras.layers.Conv2D(256, self.kernel_size, strides=(2, 2), activation='relu', padding='same')
+        self.fa_conv_3 = tf.keras.layers.Conv2D(512, self.kernel_size, strides=(2, 2), activation='relu', padding='same')
+
+
+    def call(self, t_lum, r_lum, r_ab, is_testing=False):
         pass
-
-
 
 """ 
     Color Distribution Module
