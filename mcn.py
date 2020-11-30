@@ -83,7 +83,7 @@ class Encoder(tf.keras.Model):
         self.interpolate_6 = tf.keras.layers.UpSampling2D(size=4, interpolation='bilinear')
 
 
-    def call(self, r_l, t_l, m_1, m_2, m_3, is_testing=False):
+    def call(self, r_l, t_l, is_testing=False):
         layer_1_1 = self.batch_norm_1(self.conv_1_2(self.padding_2(self.conv_1_1(self.padding_1(r_l)))))
         layer_1_2 = self.batch_norm_2(self.conv_2_2(self.padding_4(self.conv_2_1(self.padding_3(layer_1_1[:,:,::2,::2])))))
         layer_1_3 = self.batch_norm_3(self.conv_3_3(self.padding_7(self.conv_3_2(self.padding_6(self.conv_3_1(self.padding_5(layer_1_2[:,:,::2,::2])))))))

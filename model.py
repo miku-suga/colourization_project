@@ -2,15 +2,31 @@ import tensorflow as tf
 import numpy as np
 from gcfn import GatedFusionModule, SemanticAssignmentModule, ColorDistributionModule
 from mcn import Encoder, Decoder1, Decoder2, Decoder3
-from tensorflow.keras import Model
 
 class Model(tf.keras.Model):
     def __init__(self):
         super(Model, self).__init__()
-        pass
+        
+        self.encoder = Encoder()
+        self.decoder_1 = Decoder1()
+        self.decoder_2 = Decoder2()
+        self.decoder_3 = Decoder3()
+        self.cdm = ColorDistributionModule()
+        self.sam = SemanticAssignmentModule()
 
-    def call(self, inputs, is_testing=False):
-        pass
+    def call(self, r_hist, r_ab, r_l, t_l, is_testing=False):
+        """ get features and output of convolution layers from encoder """
+        r, t, conv_output = self.encoder(r_l, t_l)
+
+        """ Use r and t to get correlation matrix, and do conf feature to get conf_1,2,3 """
+
+        """ get align_1,2,3 from assignment module """
+
+        """ get conv_global1,2,3 from color distribution module """
+        conv_global1, conv_global2, conv_global3 = self.cdm(r_hist)
+
+        """ get class_output from assignment module  """
+
 
     """ 
         Loss Function 

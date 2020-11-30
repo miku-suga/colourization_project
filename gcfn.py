@@ -29,11 +29,11 @@ class GatedFusionModule(tf.keras.Model):
             3 color feature matrices of different sizes
 """
 class SemanticAssignmentModule(tf.keras.Model):
-    def __init__(self, height, width):
+    def __init__(self):
         super(SemanticAssignmentModule, self).__init__()
         
-        self.height = height
-        self.width = width
+        """ self.height = height """
+        """ self.width = width """
 
         self.kernel_size = 3
         
@@ -46,6 +46,7 @@ class SemanticAssignmentModule(tf.keras.Model):
 
 
     def call(self, t_lum, r_lum, r_ab, is_testing=False):
+        """ takes in r, t, output of encoder, r_ab and spit out correlation matrix features conf_1,2,3, class output G, and f_s1,2,3 """
         pass
 
 """ 
