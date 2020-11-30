@@ -10,20 +10,12 @@ from tensorflow.keras import Model
     Output: 3 fused color features of 3 different sizes
 """
 class GatedFusionModule(tf.keras.Model):
-    def __init__(self, corr, f_s_1, f_s_2, f_s_3, f_rh_1, f_rh_2, f_rh_3):
+    def __init__(self):
         super(GatedFusionModule, self).__init__()
-        """ Init input matrices """
-        self.corr = corr
-        self.f_s_1 = f_s_1
-        self.f_s_2 = f_s_2
-        self.f_s_3 = f_s_3
-        self.f_rh_1 = f_rh_1
-        self.f_rh_2 = f_rh_2
-        self.f_rh_3 = f_rh_3
 
         """ Init layers """
 
-    def call(self, inputs, is_testing=False):
+    def call(self, corr, f_s_1, f_s_2, f_s_3, f_rh_1, f_rh_2, f_rh_3, is_testing=False):
         pass
 
 
@@ -78,5 +70,8 @@ class ColorDistributionModule(tf.keras.Model):
         self.conv_2_3 = tf.keras.layers.Conv2D(128, self.kernel_size, activation='relu', padding='same')
 
     def call(self, r_hist, is_testing=False):
-        pass
-
+        conv_output = self.conv_1_3(self.conv_1_2(self.conv_1_1(r_hist)))
+        f_1 = self.conv_2_1(conv_output)
+        f_2 = self.conv_2_2(conv_output)
+        f_3 = self.conv_2_3(conv_output)
+        return f_1, f_2, f_3
