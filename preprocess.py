@@ -20,7 +20,6 @@ def get_tf_dataset(dataset_type):
 
     return image_train, label_train, image_test, label_test
 
-
 def lab2rgb(self, L, AB):
     AB2 = AB * 110.0
     L2 = (L + 1.0) * 50.0
