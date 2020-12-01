@@ -1,8 +1,25 @@
 import tensorflow as tf
+import tensorflow_datasets as tfds
 from skimage import color
 import numpy as np
 from PIL import Image
 import cv2
+
+'''
+Returned as tensor data type
+'''
+def get_tf_dataset(dataset_type):
+    image_train, label_train = tfds.load('places365_small', split='train', batch_size=-1, as_supervised=True)
+    image_test, label_test = tfds.load('places365_small', split='test', batch_size=-1, as_supervised=True)
+
+    # Comment this part out if we're using the full dataset:
+    image_train = image_train[:60000]
+    label_train = label_train[:60000]
+    image_test = image_test[:10000]
+    label_test = label_test[:10000]
+
+    return image_train, label_train, image_test, label_test
+
 
 def lab2rgb(self, L, AB):
     AB2 = AB * 110.0
