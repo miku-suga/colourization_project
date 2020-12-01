@@ -23,6 +23,8 @@ class GatedFusionModule(tf.keras.Model):
         corr = self.C_conv_1(corr)
         corr = self.C_conv_2(corr)
 
+        return M1, M2, M3
+
 
 """ 
     Semantic Assingment Module
@@ -50,9 +52,8 @@ class SemanticAssignmentModule(tf.keras.Model):
         self.fa_conv_2 = tf.keras.layers.Conv2D(256, self.kernel_size, strides=(2, 2), activation='relu', padding='same')
         self.fa_conv_3 = tf.keras.layers.Conv2D(512, self.kernel_size, strides=(2, 2), activation='relu', padding='same')
 
-        self.gtl_dense_1 = tf.keras.layers.Dense(1024, activation='relu')
-        self.gtl_dense_2 = tf.keras.layers.Dense(1024, activation='relu')
-        self.gtl_dense_3 = tf.keras.layers.Dense(num_classes, activation='softmax')
+        self.gtl_dense_1 = tf.keras.layers.Dense(512, activation='relu')
+        self.gtl_dense_2 = tf.keras.layers.Dense(num_classes, activation='softmax')
 
 
     def call(self, t_lum, r_lum, r_ab, is_testing=False):
@@ -67,13 +68,13 @@ class SemanticAssignmentModule(tf.keras.Model):
         f_s2 = self.fa_conv_2(f_s3)
         f_s1 = self.fa_conv_3(f_s2)
 
-        mp = tf.nn.max_pool(t_lum[3], 2, strides=2, padding='same')
+        mp = tf.nn.max_pool2d(t_lum[3], t_lum.shape, strides=1, padding="VALID")
 
         g_tl = self.gtl_dense_1(tf.reshape(mp, [len(mp), -1]))
         g_tl = self.gtl_dense_2(g_tl)
         g_tl = self.gtl_dense_3(g_tl)
 
-        return (g_tl, C, f_s3, f_s2, f_s1)
+        return (g_tl, C, f_s1, f_s2, f_s3)
 
     def correlate(self, t_lum, r_lum):
         # TODO: optimize this

@@ -13,20 +13,22 @@ class Model(tf.keras.Model):
         self.decoder_3 = Decoder3()
         self.cdm = ColorDistributionModule()
         self.sam = SemanticAssignmentModule()
+        self.gfm = GatedFusionModule()
 
     def call(self, r_hist, r_ab, r_l, t_l, is_testing=False):
         """ get features and output of convolution layers from encoder """
-        r, t, conv_output = self.encoder(r_l, t_l)
+        f_rl, f_tl, conv_out = self.encoder(r_l, t_l)
+        
+        f_global1, f_global2, f_global3 = self.cdm(r_hist)
+        g_tl, corr, f_s1, f_s2, f_s3 = self.sam(f_twannal, f_rl, r_ab)
+        
+        m1, m2, m3 = self.gfm(corr, f_s1, f_s2, f_s3, f_global1, f_global2, f_global3)
+        
+        encoder_output, fake_img_1 = self.Decoder1(distri, assign, corr_feat_3, enc_output_1, layer_3)
+        encoder_output, fake_img_2 = self.Decoder2(distri, assign, corr_feat_2, enc_output_2, layer_2)
+        encoder_output, fake_img_3 = self.Decoder3(distri, assign, corr_feat_1, enc_output_1, layer_1)
 
-        """ Use r and t to get correlation matrix, and do conf feature to get conf_1,2,3 """
-
-        """ get align_1,2,3 from assignment module """
-
-        """ get conv_global1,2,3 from color distribution module """
-        conv_global1, conv_global2, conv_global3 = self.cdm(r_hist)
-
-        """ get class_output from assignment module  """
-
+        return g_tl, fake_img_1, fake_img_2, fake_img_3
 
     """ 
         Loss Function 
