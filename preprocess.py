@@ -8,7 +8,7 @@ import cv2
 '''
 Returned as tensor data type
 '''
-def get_tf_dataset(dataset_type):
+def get_tf_dataset():
     image_train, label_train = tfds.load('places365_small', split='train', batch_size=-1, as_supervised=True)
     image_test, label_test = tfds.load('places365_small', split='test', batch_size=-1, as_supervised=True)
 
