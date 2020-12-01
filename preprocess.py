@@ -9,16 +9,16 @@ import cv2
 Returned as tensor data type
 '''
 def get_tf_dataset():
-    image_train, label_train = tfds.load('places365_small', split='train', batch_size=-1, as_supervised=True)
-    image_test, label_test = tfds.load('places365_small', split='test', batch_size=-1, as_supervised=True)
+    train_data, train_label = tfds.load('places365_small', split='train', batch_size=-1, as_supervised=True)
+    test_data, test_label = tfds.load('places365_small', split='test', batch_size=-1, as_supervised=True)
 
     # Comment this part out if we're using the full dataset:
-    image_train = image_train[:60000]
-    label_train = label_train[:60000]
-    image_test = image_test[:10000]
-    label_test = label_test[:10000]
+    train_data = train_data[:60000]
+    train_label = train_label[:60000]
+    test_data = test_data[:10000]
+    test_label = test_label[:10000]
 
-    return image_train, label_train, image_test, label_test
+    return train_data, train_label, test_data, test_label
 
 def lab2rgb(self, L, AB):
     AB2 = AB * 110.0
@@ -57,4 +57,6 @@ def process_img(self, im_path, transform):
         l_ts.append(lab_t[[0], ...] / 50.0 - 1.0)
         ab_ts.append(lab_t[[1, 2], ...] / 110.0)
     return l_ts, ab_ts
+
+
 
