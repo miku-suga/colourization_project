@@ -17,6 +17,12 @@ Colors from Reference Image. In Proceedings of the 28th ACM International
 Conference on Multimedia (MM ’20), October 12–16, 2020, Seattle, WA, USA.
 ACM, New York, NY, USA, 9 pages. https://doi.org/10.1145/3394171.3413594
 
+## Running Instruction
+
+When the project is first downloaded, you need to run `./setup.sh` once. This will create a virtual environment in `env`.
+After the setup is done, the project could be run by first activating the virtual environment with `source env/bin/activate`,
+and then invoking the main script `python3 main.py`
+
 ## Introduction 
 *what problem you’re solving and why it’s important*
 
