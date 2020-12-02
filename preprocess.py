@@ -29,6 +29,7 @@ def lab2rgb(self, L, AB):
     rgb = color.lab2rgb(Lab) * 255
     return rgb
 
+##256 -> 64
 def __scale_width(img, target_width, method=Image.BICUBIC):
     ow, oh = img.size
     if ow <= oh:
@@ -58,3 +59,7 @@ def process_img(self, im_path, transform):
         ab_ts.append(lab_t[[1, 2], ...] / 110.0)
     return l_ts, ab_ts
 
+
+if __name__ == "__main__":
+    image_train, label_train, image_test, label_test = get_tf_dataset()
+    # for i in image_train:
