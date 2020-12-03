@@ -77,3 +77,54 @@ class Model(tf.keras.Model):
     def loss_G(self, t_ab, t_l):
         pass
 
+
+class Discriminator(tf.keras.Model):
+    def __init__(self):
+        super(Discriminator, self).__init__()
+
+        self.kernel_size = 3
+
+        self.conv_1_1 = tf.keras.layers.Conv2D(
+            32, self.kernel_size, activation='relu', padding='same')
+        self.conv_1_2 = tf.keras.layers.Conv2D(
+            32, self.kernel_size, activation='relu', padding='same')
+        self.conv_2_1 = tf.keras.layers.Conv2D(
+            64, self.kernel_size, activation='relu', padding='same')
+        self.conv_2_2 = tf.keras.layers.Conv2D(
+            64, self.kernel_size, activation='relu', padding='same')
+        self.conv_3_1 = tf.keras.layers.Conv2D(
+            128, self.kernel_size, activation='relu', padding='same')
+        self.conv_3_2 = tf.keras.layers.Conv2D(
+            128, self.kernel_size, activation='relu', padding='same')
+        self.conv_4_1 = tf.keras.layers.Conv2D(
+            256, self.kernel_size, activation='relu', padding='same')
+        self.conv_4_2 = tf.keras.layers.Conv2D(
+            256, self.kernel_size, activation='relu', padding='same')
+
+        self.dense_1 = tf.keras.layers.Dense(512, activation='relu')
+        self.dense_2 = tf.keras.layers.Dense(512, activation='relu')
+        self.dense_3 = tf.keras.layers.Dense(2, activation='softmax')
+
+    def call(self, images):
+        out = self.conv_1_1(images)
+        out = self.conv_1_2(out)
+        out = tf.nn.max_pool2d(out, 2, strides=2, padding='VALID')
+        out = self.conv_2_1(out)
+        out = self.conv_2_2(out)
+        out = tf.nn.max_pool2d(out, 2, strides=2, padding='VALID')
+        out = self.conv_3_1(out)
+        out = self.conv_3_2(out)
+        out = tf.nn.max_pool2d(out, 2, strides=2, padding='VALID')
+        out = self.conv_4_1(out)
+        out = self.conv_4_2(out)
+        out = tf.nn.max_pool2d(out, 2, strides=2, padding='VALID')
+
+        out = tf.reshape(out, [out.shape[0], -1])
+        out = self.dense_1(out)
+        out = self.dense_2(out)
+        out = self.dense_3(out)
+
+        return out
+
+    def loss(self):
+        pass
