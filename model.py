@@ -36,29 +36,44 @@ class Model(tf.keras.Model):
 
         return g_tl, fake_img_1, fake_img_2, fake_img_3
 
+
     """ 
-        Loss Function 
-        Input: Input class label, G
-               3 ab channel matrices of input image T
-               luminance channel of input image T
+        Classification Loss Function 
+        Input: g_tl and G label g_tl_label
         Output: Loss
     """
 
-    def loss(self, g, t_ab_1, t_ab_2, t_ab_3, t_l):
+    def loss_class(self, g_tl, g_tl_label):
+        loss_func = tf.keras.losses.CategoricalCrossentropy()
+        return loss_func(g_tl_label, g_tl).numpy()
 
-        def loss_class(g_tl):
-            pass
+    """ 
+        Smooth L1 Loss Function 
+        Input: Output image t_ab and target label t_label
+        Output: Loss
+    """
 
-        def loss_pixel(t_ab):
-            pass
+    def loss_pixel(self, t_ab, t_label):
+        return tf.losses.huber_loss(t_label, t_ab)
 
-        def loss_hist(t_ab):
-            pass
+    """ 
+        Histogram Loss Function 
+        Input: Histogram of r and histogram of t
+        Output: Loss
+    """
 
-        def loss_tv(t_ab):
-            pass
+    def loss_hist(self, r_h, t_h):
+        return 2 * tf.reduce_sum(tf.divide(tf.square(t_h - r_h), (t_h + r_h)))
 
-        def loss_G(t_ab, t_l):
-            pass
+    """ 
+        TV REGULARIZATION Loss Function 
+        Input: t_ab
+        Output: variation
+    """
 
+    def loss_tv(self, t_ab):
+        return tf.image.total_variation(t_ab)
+
+    def loss_G(self, t_ab, t_l):
         pass
+
