@@ -47,5 +47,5 @@ if __name__ == "__main__":
             'ab' : ab,
             'hist' : ab,
         }
-        im_list.append(im_dict)        
+        im_list.append(im_dict) 
         
