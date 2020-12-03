@@ -31,6 +31,10 @@ class GatedFusionModule(tf.keras.Model):
         conf_2 = conf_1[:, :, ::2, ::2]
         conf_3 = conf_2[:, :, ::2, ::2]
 
+        global_1 = tf.broadcast_to(global_1, align_1)
+        global_2 = tf.broadcast_to(global_2, align_2)
+        global_3 = tf.broadcast_to(global_3, align_3)
+
         M3 = align_3 * conf_3 + global_1 * (1 - conf_3)
         M2 = align_2 * conf_2 + global_2 * (1 - conf_2)
         M1 = align_1 * conf_1 + global_3 * (1 - conf_1)
