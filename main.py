@@ -1,7 +1,8 @@
 import os
 import tensorflow as tf
+import tensorflow_datasets as tfds
 import numpy as np
-import preprocess
+from preprocess import get_tf_dataset
 from model import Model
 
 def train(model, train_data, train_label):
@@ -15,6 +16,7 @@ def train(model, train_data, train_label):
         with tf.GradientTape() as tape:
             # probs, final_state = model(batch_input, None)
             # loss = model.loss(probs, batch_label)
+            pass
 
 
         # if i % 128 == 0:
