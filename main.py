@@ -4,6 +4,7 @@ import tensorflow_datasets as tfds
 import numpy as np
 from preprocess import get_tf_dataset, create_dicts
 from model import Model
+from matplotlib import pyplot as plt
 
 def train(model, train_data, train_label):
     num_inputs = len(train_data)
@@ -39,6 +40,13 @@ def test(model, data):
     
     return loss_list
 
+def visualize_results(images):
+    fig = plt.figure()
+    for i in range(len(images)):
+            ax = fig.add_subplot(i, 1, 1)
+            ax.imshow(images[i], cmap="Greys")
+    plt.show()
+
 def main():
     num_threads = 0
     batch_size = 48
@@ -62,7 +70,7 @@ def main():
     # visualize
 
 
-    loss_list = test(model, test_data, test_label)
+    loss_list = test(model, data)
 
 
 if __name__ == '__main__':
