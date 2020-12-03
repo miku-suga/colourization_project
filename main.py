@@ -5,39 +5,52 @@ import numpy as np
 from preprocess import get_tf_dataset
 from model import Model
 
-def train(model, train_data, train_label):
-    num_inputs = len(train_data)
+def trainMCN(model, reference_dict, target_dict, target_label_dict):
+    r_hist, r_ab, r_l = r_dict["hist"], r_dict["ab"], r_dict["l"]
 
+    t_hist, t_ab, t_l = target_dict["hist"], t_dict["ab"], t_dict["l"]
+    t_label_hist, t_label_ab, t_label_l = t_label_dict["hist"], t_label_dict["ab"], t_label_dict["l"]
+
+    num_inputs = len(train_data)
     for i in range(0, num_inputs - model.batch_size, model.batch_size):
-        batch_input = train_inputs[i:i+model.batch_size]
-        batch_label = train_labels[i:i+model.batch_size]
+        batch_r_hist = r_hist[i:i+model.batch_size]
+        batch_r_ab = r_ab[i:i+model.batch_size]
+        batch_r_l = r_l[i:i+model.batch_size]
+
+        batch_t_hist = t_hist[i:i+model.batch_size]
+        batch_t_ab = t_ab[i:i+model.batch_size]
+        batch_t_l = t_l[i:i+model.batch_size]
+        
+        batch_t_label_l = t_label_l[i:i+model.batch_size]
+        batch_t_label_ab = t_label_ab[i:i+model.batch_size]
 
         # must be edited layer
         with tf.GradientTape() as tape:
-            # probs, final_state = model(batch_input, None)
-            # loss = model.loss(probs, batch_label)
+            g_tl, fake_img_1, fake_img_2, fake_img_3 = model(batch_r_hist, batch_r_ab, batch_r_l, batch_t_l)
+            classification_loss = model.loss_class(g_tl, batch_t_label_l)
+            smoothL1_loss = model.loss_pixel(batch_t_ab, batch_t_label_ab)
+            hist_loss = model.loss_hist(batch_r_hist, batch_t_hist)
+            tv_reg_loss = loss_tv(batch_t_ab)
+
+            #IM STILL FIGURING OUT how to get the D value
             pass
-
-
-        # if i % 128 == 0:
-        #     print(np.exp(loss))
-
+        
         gradients = tape.gradient(loss, model.trainable_variables)
         model.optimizer.apply_gradients(zip(gradients, model.trainable_variables))
 
 
-def test(model, data):
-    num_inputs = len(test_inputs)
-    loss_list = []
+def visualise_result(model, data):
+    # num_inputs = len(test_inputs)
+    # loss_list = []
 
-    for i in range(0, num_inputs - model.batch_size, model.batch_size):
-        batch_input = train_inputs[i:i+model.batch_size]
-        batch_label = train_labels[i:i+model.batch_size]
+    # for i in range(0, num_inputs - model.batch_size, model.batch_size):
+    #     batch_input = train_inputs[i:i+model.batch_size]
+    #     batch_label = train_labels[i:i+model.batch_size]
 
-        # probs, final_state = model(batch_input, None)
-        # loss_list.append(model.loss(probs, batch_label))
+    #     # probs, final_state = model(batch_input, None)
+    #     # loss_list.append(model.loss(probs, batch_label))
     
-    return loss_list
+    # return loss_list
 
 def main():
     num_threads = 0
