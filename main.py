@@ -6,6 +6,7 @@ from preprocess import get_tf_dataset, create_dicts
 from model import Model
 from matplotlib import pyplot as plt
 
+# will adjust the parameters accordingly - miku
 def trainMCN(model, reference_dict, target_dict, target_label_dict):
     r_hist, r_ab, r_l = r_dict["hist"], r_dict["ab"], r_dict["l"]
 
@@ -13,19 +14,18 @@ def trainMCN(model, reference_dict, target_dict, target_label_dict):
     t_label_hist, t_label_ab, t_label_l = t_label_dict["hist"], t_label_dict["ab"], t_label_dict["l"]
 
     num_inputs = len(train_data)
-    for i in range(0, num_inputs - model.batch_size, model.batch_size):
-        batch_r_hist = r_hist[i:i+model.batch_size]
-        batch_r_ab = r_ab[i:i+model.batch_size]
-        batch_r_l = r_l[i:i+model.batch_size]
+    for i in range(0, num_inputs - model.batch_size_1, model.batch_size):
+        batch_r_hist = r_hist[i:i+model.batch_size_1]
+        batch_r_ab = r_ab[i:i+model.batch_size_1]
+        batch_r_l = r_l[i:i+model.batch_size_1]
 
-        batch_t_hist = t_hist[i:i+model.batch_size]
-        batch_t_ab = t_ab[i:i+model.batch_size]
-        batch_t_l = t_l[i:i+model.batch_size]
+        batch_t_hist = t_hist[i:i+model.batch_size_1]
+        batch_t_ab = t_ab[i:i+model.batch_size_1]
+        batch_t_l = t_l[i:i+model.batch_size_1]
         
-        batch_t_label_l = t_label_l[i:i+model.batch_size]
-        batch_t_label_ab = t_label_ab[i:i+model.batch_size]
+        batch_t_label_l = t_label_l[i:i+model.batch_size_1]
+        batch_t_label_ab = t_label_ab[i:i+model.batch_size_1]
 
-        # must be edited layer
         with tf.GradientTape() as tape:
             g_tl, fake_img_1, fake_img_2, fake_img_3 = model(batch_r_hist, batch_r_ab, batch_r_l, batch_t_l)
             classification_loss = model.loss_class(g_tl, batch_t_label_l)
@@ -33,25 +33,16 @@ def trainMCN(model, reference_dict, target_dict, target_label_dict):
             hist_loss = model.loss_hist(batch_r_hist, batch_t_hist)
             tv_reg_loss = loss_tv(batch_t_ab)
 
-            #IM STILL FIGURING OUT how to get the D value
+            #IM STILL FIGURING OUT how to get the D value -miku
             pass
         
         gradients = tape.gradient(loss, model.trainable_variables)
         model.optimizer.apply_gradients(zip(gradients, model.trainable_variables))
 
+def train_everything(model, reference_dict, target_dict, target_label_dict):
+    #working on it - miku
+    pass
 
-def visualise_result(model, data):
-    # num_inputs = len(test_inputs)
-    # loss_list = []
-
-    # for i in range(0, num_inputs - model.batch_size, model.batch_size):
-    #     batch_input = train_inputs[i:i+model.batch_size]
-    #     batch_label = train_labels[i:i+model.batch_size]
-
-    #     # probs, final_state = model(batch_input, None)
-    #     # loss_list.append(model.loss(probs, batch_label))
-    
-    # return loss_list
 
 def visualize_results(images):
     fig = plt.figure()
@@ -76,7 +67,7 @@ def main():
     model = Model()
 
     # train MCN without histogram loss
-    train(model, image_list, test_list)
+    trainMCN(model, image_list, test_list)
 
     # train everything 
 
