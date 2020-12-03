@@ -25,7 +25,7 @@ def process_img(im):
     im = np.array(im)
     ims = [im]
     for i in [0.5, 0.25]:
-        ims = [tf.image.resize(im, None, fx=i, fy=i, interpolation=cv2.INTER_AREA)] + ims
+        ims = [cv2.resize(im, None, fx=i, fy=i, interpolation=cv2.INTER_AREA)] + ims
     l_ts, ab_ts = [], []
     for im in ims:
         lab = color.rgb2lab(im).astype(np.float32)
@@ -36,16 +36,27 @@ def process_img(im):
 
 if __name__ == "__main__":
     image_train, label_train, image_test, label_test = get_tf_dataset()
-    im_list = []
+    print ("image loaded")
+    image_list = []
+    label_list = []
     for i in range (len(image_train)):
         image = image_train[i]
-        label = image_label[i]
+        label = label_train[i]
         tf.image.resize(image, (64,64))
+        tf.image.resize(label, (64,64))
         l, ab = process_img(image)
+        label_l, label_ab = process_img(label)
         im_dict = {
             'l' : l,
             'ab' : ab,
             'hist' : ab,
         }
-        im_list.append(im_dict) 
-        
+        l_dict = {
+            'l' : label_l,
+            'ab' : label_ab,
+            'hist' : label_ab,
+        }
+        image_list.append(im_dict) 
+        label_list.append(l_dict)
+
+    print (len(image_list))
