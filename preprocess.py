@@ -12,10 +12,10 @@ def get_tf_dataset():
     # train_data, _ = tfds.load('places365_small', split='train', batch_size=-1, as_supervised=True)
     # test_data, _ = tfds.load('places365_small', split='test', batch_size=-1, as_supervised=True)
     train_data, _ = tfds.load('places365_small', split='train[:1%]', batch_size=-1, as_supervised=True)
-    train_data, _ = tfds.load('places365_small', split='train[:1%]', batch_size=-1, as_supervised=True)
+    test_data, _ = tfds.load('places365_small', split='train[:1%]', batch_size=-1, as_supervised=True)
 
     print (tf.shape(train_data))
-    
+
     train_data = tfds.as_numpy(train_data)
     test_data = tfds.as_numpy(test_data)
 
