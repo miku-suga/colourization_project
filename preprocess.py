@@ -44,6 +44,33 @@ def process_img(im):
         ab_ts.append(lab_t[[1, 2], ...] / 110.0)
     return l_ts, ab_ts
 
+def create_dicts(image_train, label_train, image_test, label_test):
+    image_train, label_train, image_test, label_test = get_tf_dataset()
+    print ("image loaded")
+    image_list = []
+    label_list = []
+    for i in range (len(image_train)):
+        image = image_train[i]
+        label = label_train[i]
+        tf.image.resize(image, (64,64))
+        tf.image.resize(label, (64,64))
+        l, ab = process_img(image)
+        label_l, label_ab = process_img(label)
+        im_dict = {
+            'l' : l,
+            'ab' : ab,
+            'hist' : ab,
+        }
+        l_dict = {
+            'l' : label_l,
+            'ab' : label_ab,
+            'hist' : label_ab,
+        }
+        image_list.append(im_dict) 
+        label_list.append(l_dict)
+
+    return image_list, label_list
+
 if __name__ == "__main__":
     ## load data
     train_data, test_data = get_tf_dataset()
