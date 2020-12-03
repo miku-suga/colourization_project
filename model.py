@@ -16,6 +16,15 @@ class Model(tf.keras.Model):
         self.sam = SemanticAssignmentModule()
         self.gfm = GatedFusionModule()
 
+        self.batch_size_1 = 48
+        self.batch_size_2 = 12
+
+        self.pixel_weight = 1000
+        self.hist_weight = 1
+        self.class_weight = 1
+        self.g_weight = 0.1
+        self.tv_weight = 10
+
     def call(self, r_hist, r_ab, r_l, t_l, is_testing=False):
         """ get features and output of convolution layers from encoder """
         f_rl, f_tl, enc_output_1, layer_1, layer_2, layer_3 = self.encoder(
