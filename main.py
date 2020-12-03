@@ -2,8 +2,9 @@ import os
 import tensorflow as tf
 import tensorflow_datasets as tfds
 import numpy as np
-from preprocess import get_tf_dataset
+from preprocess import get_tf_dataset, create_dicts
 from model import Model
+from matplotlib import pyplot as plt
 
 def trainMCN(model, reference_dict, target_dict, target_label_dict):
     r_hist, r_ab, r_l = r_dict["hist"], r_dict["ab"], r_dict["l"]
@@ -52,6 +53,13 @@ def visualise_result(model, data):
     
     # return loss_list
 
+def visualize_results(images):
+    fig = plt.figure()
+    for i in range(len(images)):
+            ax = fig.add_subplot(i, 1, 1)
+            ax.imshow(images[i], cmap="Greys")
+    plt.show()
+
 def main():
     num_threads = 0
     batch_size = 48
@@ -61,15 +69,21 @@ def main():
     
     train_data, train_label, test_data, test_label = get_tf_dataset()
 
-    #### preprocess functions go here #####
+    # call function to turn train_data/label into a dict consisting of l, ab, hist
+    image_list, test_list = create_dicts(train_data, train_label, test_data, test_label)
 
+    # create model
     model = Model()
-    train(model, train_data, train_label)
-    loss_list = test(model, test_data, test_label)
+
+    # train MCN without histogram loss
+    train(model, image_list, test_list)
+
+    # train everything 
+
+    # visualize
 
 
-
-
+    loss_list = test(model, data)
 
 
 if __name__ == '__main__':
