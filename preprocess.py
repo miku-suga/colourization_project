@@ -44,71 +44,48 @@ def process_img(im):
         ab_ts.append(lab_t[[1, 2], ...] / 110.0)
     return l_ts, ab_ts
 
-def create_dicts(image_train, label_train, image_test, label_test):
-    image_train, label_train, image_test, label_test = get_tf_dataset()
-    print ("image loaded")
-    image_list = []
-    label_list = []
-    for i in range (len(image_train)):
-        image = image_train[i]
-        label = label_train[i]
-        tf.image.resize(image, (64,64))
-        tf.image.resize(label, (64,64))
-        l, ab = process_img(image)
-        label_l, label_ab = process_img(label)
+def create_dict(targets, refs):
+    im_list = []
+    for i in range (len(targets)):
+        target = targets[i]
+        reference = refs[i]
+        t_l, t_ab = process_img(target)
+        r_l, r_ab = process_img(reference)
         im_dict = {
-            'l' : l,
-            'ab' : ab,
-            'hist' : ab,
+            't_l' : t_l,
+            't_ab' : t_ab,
+            't_hist' : t_ab,
+            'r_l' : r_l,
+            'r_ab' : r_ab,
+            'r_hist' : r_ab
         }
-        l_dict = {
-            'l' : label_l,
-            'ab' : label_ab,
-            'hist' : label_ab,
-        }
-        image_list.append(im_dict) 
-        label_list.append(l_dict)
+        im_list.append(im_dict) 
 
-    return image_list, label_list
+    return im_list
 
 if __name__ == "__main__":
     ## load data
     train_data, test_data = get_tf_dataset()
     print ("dataset loaded")
 
-    ## set labels to the original colored image
-    train_label = train_data
-    test_label = test_data
+    ## resize images
+    train_data = cv2.resize(train_data, (64, 64))
+    test_data = cv2.resize(test_data, (64, 64))
+
+    ## set refs to the original colored image
+    train_ref = train_data
+    test_ref = test_data
 
     ## set input images to the greyscaled images
-    train_input= []
-    test_input = []
+    train_target= []
+    test_target = []
     for i in train_data:
-        train_input.append(rgb2gray(i))
+        train_target.append(rgb2gray(i))
     for i in test_data:
-        test_input.append(rgb2gray(i))
+        test_target.append(rgb2gray(i))
 
     ## put input and label into list of dictionaries containing processed info
-    input_list = []
-    label_list = []
-    for i in range (len(image_train)):
-        image = image_train[i]
-        label = label_train[i]
-        tf.image.resize(image, (64,64))
-        tf.image.resize(label, (64,64))
-        l, ab = process_img(image)
-        label_l, label_ab = process_img(label)
-        im_dict = {
-            'l' : l,
-            'ab' : ab,
-            'hist' : ab,
-        }
-        l_dict = {
-            'l' : label_l,
-            'ab' : label_ab,
-            'hist' : label_ab,
-        }
-        image_list.append(im_dict) 
-        label_list.append(l_dict)
+    train_dict = create_dict(train_target, train_ref)
+    test_dict = create_dict(test_target, test_ref)
 
-    print (len(image_list))
+    print (len(train_dict))
