@@ -45,27 +45,38 @@ def process_img(im):
     return l_ts, ab_ts
 
 def create_dict(targets, refs):
-    target_list = []
-    ref_list = []
+    t_l_list, t_ab_list, t_hist_list = [], [], []
+    r_l_list, r_ab_list, r_hist_list = [], [], []
+
     for i in range (len(targets)):
         target = targets[i]
         reference = refs[i]
         t_l, t_ab = process_img(target)
         r_l, r_ab = process_img(reference)
-        target_dict = {
-            't_l' : t_l,
-            't_ab' : t_ab,
-            't_hist' : t_ab,
-        }
-        ref_dict = {
-            'r_l' : r_l,
-            'r_ab' : r_ab,
-            'r_hist' : r_ab
-        }
-        target_list.append(target_dict)
-        ref_list.append(ref_dict)
+
+        # TODO: fix this
+        t_hist = 1
+        r_hist = 1
+
+        t_l_list.append(t_l)
+        t_ab_list.append(t_ab)
+        t_hist_list.append(t_hist)
+        r_l_list.append(r_l)
+        r_ab_list.append(r_ab)
+        r_hist_list.append(r_hist)
+
+    target_dict = {
+        't_l' : t_l_list,
+        't_ab' : t_ab_list,
+        't_hist' : t_hist_list
+    }
+    ref_dict = {
+        'r_l' : r_l_list,
+        'r_ab' : r_ab_list,
+        'r_hist' : r_hist_list
+    }
         
-    return target_list, ref_list
+    return target_dict, ref_dict
 
 if __name__ == "__main__":
     ## load data
