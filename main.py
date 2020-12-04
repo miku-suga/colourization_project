@@ -83,10 +83,12 @@ def main():
     train_everything(model, ref_dict_list, target_dict_list, target_label_dict) 
 
     # call model on first 10 test examples
-    image_list = []
+    test_target = target_dict_list[:10]
+    test_ref = ref_dict_list[:10]
+    g_tl, fake_img_1, fake_img_2, fake_img_3 = model(test_ref['hist'], test_ref['ab'], test_ref['l'], test_target['l'])
 
     # visualize
-    visualize_results(image_list)
+    visualize_results(fake_img_3)
 
 
 if __name__ == '__main__':
