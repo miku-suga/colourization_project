@@ -45,23 +45,27 @@ def process_img(im):
     return l_ts, ab_ts
 
 def create_dict(targets, refs):
-    im_list = []
+    target_list = []
+    ref_list = []
     for i in range (len(targets)):
         target = targets[i]
         reference = refs[i]
         t_l, t_ab = process_img(target)
         r_l, r_ab = process_img(reference)
-        im_dict = {
+        target_dict = {
             't_l' : t_l,
             't_ab' : t_ab,
             't_hist' : t_ab,
+        }
+        ref_dict = {
             'r_l' : r_l,
             'r_ab' : r_ab,
             'r_hist' : r_ab
         }
-        im_list.append(im_dict) 
-
-    return im_list
+        target_list.append(target_dict)
+        ref_list.append(ref_dict)
+        
+    return target_list, ref_list
 
 if __name__ == "__main__":
     ## load data
@@ -85,7 +89,7 @@ if __name__ == "__main__":
         test_target.append(rgb2gray(i))
 
     ## put input and label into list of dictionaries containing processed info
-    train_dict = create_dict(train_target, train_ref)
-    test_dict = create_dict(test_target, test_ref)
+    train_dict_1, train_dict_2 = create_dict(train_target, train_ref)
+    test_dict_1, test_dict_2 = create_dict(test_target, test_ref)
 
-    print (len(train_dict))
+    print (len(train_dict_1))

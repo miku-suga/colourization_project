@@ -2,7 +2,7 @@ import os
 import tensorflow as tf
 import tensorflow_datasets as tfds
 import numpy as np
-from preprocess import get_tf_dataset, create_dicts
+from preprocess import get_tf_dataset, create_dict
 from model import Model
 from matplotlib import pyplot as plt
 
@@ -57,24 +57,28 @@ def main():
     serial_batches = True
     no_flip = True
     display_id = -1
+    image_height = 64
+    image_width = 64
     
-    train_data, train_label, test_data, test_label = get_tf_dataset()
+    target_list, ref_list = get_tf_dataset()
 
     # call function to turn train_data/label into a dict consisting of l, ab, hist
-    image_list, test_list = create_dicts(train_data, train_label, test_data, test_label)
+    target_dict, ref_dict = create_dict(target_list, ref_list)
 
     # create model
-    model = Model()
+    model = Model(image_height, image_width)
 
     # train MCN without histogram loss
-    trainMCN(model, image_list, test_list)
+    model.trainMCN(model, ref_dict, target_dict)
 
     # train everything 
+    model.train_everything(model, ref_dict, target_dict)
+
+    # call model on first 10 test examples
+    image_list = []
 
     # visualize
-
-
-    loss_list = test(model, data)
+    visualize_results(image_list)
 
 
 if __name__ == '__main__':
