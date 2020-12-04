@@ -11,8 +11,8 @@ Returned as tensor data type
 def get_tf_dataset():
     # train_data, _ = tfds.load('places365_small', split='train', batch_size=-1, as_supervised=True)
     # test_data, _ = tfds.load('places365_small', split='test', batch_size=-1, as_supervised=True)
-    train_data, _ = tfds.load('places365_small', split='train[:1%]', batch_size=-1, as_supervised=True)
-    test_data, _ = tfds.load('places365_small', split='train[:1%]', batch_size=-1, as_supervised=True)
+    train_data, _ = tfds.load('places365_small', split='train[:100]', batch_size=-1, as_supervised=True)
+    test_data, _ = tfds.load('places365_small', split='train[:100]', batch_size=-1, as_supervised=True)
 
     print (tf.shape(train_data))
 
@@ -40,8 +40,8 @@ def process_img(im):
     for im in ims:
         lab = color.rgb2lab(im).astype(np.float32)
         lab_t = tf.convert_to_tensor(lab)
-        l_ts.append(lab_t[[0], ...] / 50.0 - 1.0)
-        ab_ts.append(lab_t[[1, 2], ...] / 110.0)
+        l_ts.append(lab_t[0] / 50.0 - 1.0)
+        ab_ts.append(lab_t[1:2] / 110.0)
     return l_ts, ab_ts
 
 def create_dict(targets, refs):

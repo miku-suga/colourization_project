@@ -9,10 +9,8 @@ from util import calc_hist
 
 # will adjust the parameters accordingly - miku
 def trainMCN(model, reference_dict, target_dict, target_label_dict):
-    r_hist, r_ab, r_l = r_dict["hist"], r_dict["ab"], r_dict["l"]
-
-    t_hist, t_ab, t_l = target_dict["hist"], t_dict["ab"], t_dict["l"]
-    t_label_hist, t_label_ab, t_label_l = t_label_dict["hist"], t_label_dict["ab"], t_label_dict["l"]
+    r_hist, r_ab, r_l = reference_dict["hist"], reference_dict["ab"], reference_dict["l"]
+    t_hist, t_ab, t_l = target_dict["hist"], target_dict["ab"], target_dict["l"]
 
     num_inputs = len(train_data)
     for i in range(0, num_inputs - model.batch_size_1, model.batch_size):
@@ -60,7 +58,8 @@ def main():
     display_id = -1
     image_height = 64
     image_width = 64
-    
+    num_classes = 10
+
     target_list, ref_list = get_tf_dataset()
 
     # call function to turn train_data/label into a dict consisting of l, ab, hist
@@ -74,13 +73,14 @@ def main():
         i["r_hist"] = calc_hist(i["r_hist"], 'tf.float32')
 
     # create model
-    model = Model(image_height, image_width)
+    model = Model(num_classes, image_height, image_width)
 
     # train MCN without histogram loss
-    model.trainMCN(model, ref_dict_list, target_dict_list)
+    target_label_dict = None
+    trainMCN(model, ref_dict_list, target_dict_list, target_label_dict)
 
     # train everything 
-    model.train_everything(model, ref_dict_list, target_dict_list)
+    train_everything(model, ref_dict_list, target_dict_list, target_label_dict) 
 
     # call model on first 10 test examples
     image_list = []

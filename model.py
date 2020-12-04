@@ -5,18 +5,19 @@ from mcn import Encoder, Decoder1, Decoder2, Decoder3
 
 
 class Model(tf.keras.Model):
-    def __init__(self, img_height, img_width):
+    def __init__(self, num_classes, img_height, img_width):
         super(Model, self).__init__()
 
         self.height = img_height
         self.width = img_width
-
+        self.num_classes = num_classes
+        
         self.encoder = Encoder()
         self.decoder_1 = Decoder1()
         self.decoder_2 = Decoder2()
         self.decoder_3 = Decoder3()
         self.cdm = ColorDistributionModule()
-        self.sam = SemanticAssignmentModule(img_height, img_width)
+        self.sam = SemanticAssignmentModule(num_classes, img_height, img_width)
         self.gfm = GatedFusionModule(img_height, img_width)
 
         self.batch_size_1 = 48
