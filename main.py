@@ -5,6 +5,7 @@ import numpy as np
 from preprocess import get_tf_dataset, create_dict
 from model import Model
 from matplotlib import pyplot as plt
+from util import calc_hist
 
 # will adjust the parameters accordingly - miku
 def trainMCN(model, reference_dict, target_dict, target_label_dict):
@@ -63,16 +64,23 @@ def main():
     target_list, ref_list = get_tf_dataset()
 
     # call function to turn train_data/label into a dict consisting of l, ab, hist
-    target_dict, ref_dict = create_dict(target_list, ref_list)
+    target_dict_list, ref_dict_list = create_dict(target_list, ref_list)
+
+    # calculate histogram
+    for i in target_dict_list:
+        i["t_hist"] = calc_hist(i["t_hist"], 'tf.float32')
+
+    for i in ref_dict_list:
+        i["r_hist"] = calc_hist(i["r_hist"], 'tf.float32')
 
     # create model
     model = Model(image_height, image_width)
 
     # train MCN without histogram loss
-    model.trainMCN(model, ref_dict, target_dict)
+    model.trainMCN(model, ref_dict_list, target_dict_list)
 
     # train everything 
-    model.train_everything(model, ref_dict, target_dict)
+    model.train_everything(model, ref_dict_list, target_dict_list)
 
     # call model on first 10 test examples
     image_list = []
