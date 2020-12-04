@@ -51,11 +51,11 @@ def visualize_results(images):
     plt.show()
 
 def main():
-    num_threads = 0
-    batch_size = 48
+    """ num_threads = 0
     serial_batches = True
     no_flip = True
-    display_id = -1
+    display_id = -1 """
+
     image_height = 64
     image_width = 64
     num_classes = 10
@@ -64,13 +64,6 @@ def main():
 
     # call function to turn train_data/label into a dict consisting of l, ab, hist
     target_dict_list, ref_dict_list = create_dict(target_list, ref_list)
-
-    # calculate histogram
-    for i in target_dict_list:
-        i["t_hist"] = calc_hist(i["t_hist"], 'tf.float32')
-
-    for i in ref_dict_list:
-        i["r_hist"] = calc_hist(i["r_hist"], 'tf.float32')
 
     # create model
     model = Model(num_classes, image_height, image_width)
