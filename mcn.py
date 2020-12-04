@@ -67,23 +67,21 @@ class Encoder(tf.keras.Model):
         self.batch_norm_4 = tf.keras.layers.BatchNormalization()
 
         self.conv_5_1 = tf.keras.layers.Conv2D(
-            512, 3, dilation=2, activation='relu', padding='same')
+            512, 3, dilation_rate=2, activation='relu', padding='same')
         self.conv_5_2 = tf.keras.layers.Conv2D(
-            512, 3, dilation=2, activation='relu', padding='same')
+            512, 3, dilation_rate=2, activation='relu', padding='same')
         self.conv_5_3 = tf.keras.layers.Conv2D(
-            512, 3, dilation=2, activation='relu', padding='same')
+            512, 3, dilation_rate=2, activation='relu', padding='same')
         self.batch_norm_5 = tf.keras.layers.BatchNormalization()
 
         self.conv_6_1 = tf.keras.layers.Conv2D(
-            512, 3, dilation=2, activation='relu', padding='same')
+            512, 3, dilation_rate=2, activation='relu', padding='same')
         self.conv_6_2 = tf.keras.layers.Conv2D(
-            512, 3, dilation=2, activation='relu', padding='same')
+            512, 3, dilation_rate=2, activation='relu', padding='same')
         self.conv_6_3 = tf.keras.layers.Conv2D(
-            512, 3, dilation=2, activation='relu', padding='same')
+            512, 3, dilation_rate=2, activation='relu', padding='same')
         self.batch_norm_6 = tf.keras.layers.BatchNormalization()
 
-        self.interpolate_1 = tf.keras.layers.UpSampling2D(
-            size=0.5, interpolation='bilinear')
         self.interpolate_3 = tf.keras.layers.UpSampling2D(
             size=2, interpolation='bilinear')
         self.interpolate_4 = tf.keras.layers.UpSampling2D(
@@ -106,7 +104,9 @@ class Encoder(tf.keras.Model):
         layer_1_6 = self.batch_norm_6(self.conv_6_3(
             self.conv_6_2(self.conv_6_1(layer_1_5))))
 
-        t = tf.concat([self.interpolate_1(layer_1_1), layer_1_2, self.interpolate_3(layer_1_3),
+        # TODO: fix me, ordering
+        interpolate_1 = layer_1_1[:, ::2, ::2, :]
+        t = tf.concat([interpolate_1, layer_1_2, self.interpolate_3(layer_1_3),
                        self.interpolate_4(layer_1_4), self.interpolate_5(layer_1_5), self.interpolate_6(layer_1_6)], axis=1)
 
         layer_2_1 = self.batch_norm_1(self.conv_1_2(self.conv_1_1(t_l)))
@@ -165,7 +165,7 @@ class Decoder1(tf.keras.Model):
         self.batch_norm_1 = tf.keras.layers.BatchNormalization()
 
         self.model_out = tf.keras.layers.Conv2D(
-            2, 1, dilation=1, activation='tanh')
+            2, 1, dilation_rate=1, activation='tanh')
 
         self.resblock_1 = ResBlock(512)
         self.resblock_2 = ResBlock(512)
@@ -212,7 +212,7 @@ class Decoder2(tf.keras.Model):
         self.batch_norm_1 = tf.keras.layers.BatchNormalization()
 
         self.model_out = tf.keras.layers.Conv2D(
-            2, 1, dilation=1, activation='tanh')
+            2, 1, dilation_rate=1, activation='tanh')
 
         self.resblock_1 = ResBlock(256)
         self.resblock_2 = ResBlock(256)
@@ -257,7 +257,7 @@ class Decoder3(tf.keras.Model):
         self.leaky_relu = tf.keras.layers.LeakyReLU()
 
         self.model_out = tf.keras.layers.Conv2D(
-            2, 1, dilation=1, activation='tanh')
+            2, 1, dilation_rate=1, activation='tanh')
 
         self.resblock_1 = ResBlock(128)
         self.resblock_2 = ResBlock(128)
