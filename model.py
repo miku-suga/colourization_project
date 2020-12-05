@@ -30,6 +30,7 @@ class Model(tf.keras.Model):
         self.tv_weight = 10
 
         self.optimizer = tf.keras.optimizers.Adam(learning_rate=0.0002)
+        self.discrim = Discriminator()
 
     def call(self, r_hist, r_ab, r_l, t_l, is_testing=False):
         """ get features and output of convolution layers from encoder """
@@ -89,8 +90,9 @@ class Model(tf.keras.Model):
     def loss_tv(self, t_ab):
         return tf.image.total_variation(t_ab)
 
-    def loss_G(self, t_ab, t_l):
-        pass
+    def loss_G(self, t_lab):
+        result = 0.5 * E ((self.discrim(t_lab) - 1) ** 2)   # have to figure out what's E
+        return tf.math.reduce_min(result)
 
 
 class Discriminator(tf.keras.Model):

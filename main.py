@@ -7,13 +7,18 @@ from model import Model
 from matplotlib import pyplot as plt
 from util import calc_hist
 
-# will adjust the parameters accordingly - miku
-def trainMCN(model, reference_dict, target_dict, target_label_dict):
-    r_hist, r_ab, r_l = reference_dict["hist"], reference_dict["ab"], reference_dict["l"]
-    t_hist, t_ab, t_l = target_dict["hist"], target_dict["ab"], target_dict["l"]
+
+def calc_total_loss(classification_loss, smoothL1_los, hist_loss, tv_reg_loss, generator_loss):
+    #TODO:
+    pass
+
+def trainMCN(model, ref_dict, target_dict, target_l_dict):
+    r_hist, r_ab, r_l = ref_dict["r_hist"], ref_dict["r_ab"], ref_dict['r_l']
+    t_hist, t_ab, t_l = target_dict["t_hist"], target_dict["t_ab"], target_dict["t_l"]
+    t_lhist, t_lab, t_ll = target_l_dict["r_hist"], target_l_dict["r_ab"], target_l_dict["r_l"]
 
     num_inputs = len(train_data)
-    for i in range(0, num_inputs - model.batch_size_1, model.batch_size):
+    for i in range(0, num_inputs - model.batch_size_1, model.batch_size)_1:
         batch_r_hist = r_hist[i:i+model.batch_size_1]
         batch_r_ab = r_ab[i:i+model.batch_size_1]
         batch_r_l = r_l[i:i+model.batch_size_1]
@@ -22,24 +27,25 @@ def trainMCN(model, reference_dict, target_dict, target_label_dict):
         batch_t_ab = t_ab[i:i+model.batch_size_1]
         batch_t_l = t_l[i:i+model.batch_size_1]
         
-        batch_t_label_l = t_label_l[i:i+model.batch_size_1]
-        batch_t_label_ab = t_label_ab[i:i+model.batch_size_1]
+        batch_t_lhist = t_label_ab[i:i+model.batch_size_1]
+        batch_t_lab = t_label_ab[i:i+model.batch_size_1]
+        batch_t_ll = t_label_l[i:i+model.batch_size_1]
 
         with tf.GradientTape() as tape:
             g_tl, fake_img_1, fake_img_2, fake_img_3 = model(batch_r_hist, batch_r_ab, batch_r_l, batch_t_l)
-            classification_loss = model.loss_class(g_tl, batch_t_label_l)
-            smoothL1_loss = model.loss_pixel(batch_t_ab, batch_t_label_ab)
-            hist_loss = model.loss_hist(batch_r_hist, batch_t_hist)
+            classification_loss = model.loss_class(g_tl, batch_t_ll)
+            smoothL1_loss = model.loss_pixel(batch_t_ab, batch_t_lab)
+            hist_loss = 0
             tv_reg_loss = loss_tv(batch_t_ab)
+            generator_loss = loss_G(batch_t_lab)
 
-            #figuring out the D value
-            pass
+            total_loss = calc_total_loss(classification_loss, smoothL1_los, hist_loss, tv_reg_loss, generator_loss)
         
-        gradients = tape.gradient(loss, model.trainable_variables)
+        gradients = tape.gradient(total_loss, model.trainable_variables)
         model.optimizer.apply_gradients(zip(gradients, model.trainable_variables))
 
 def train_everything(model, reference_dict, target_dict, target_label_dict):
-    #working on it - miku
+    #TODO:
     pass
 
 
@@ -60,17 +66,24 @@ def main():
     image_width = 64
     num_classes = 10
 
-    target_list, ref_list = get_tf_dataset()
+    train_data, test_data = get_tf_dataset()
+
+    train_ref = train_data[:]
+    train_target = get_target(train_data)
+    
 
     # call function to turn train_data/label into a dict consisting of l, ab, hist
-    target_dict_list, ref_dict_list = create_dict(target_list, ref_list)
+    ref_dict, target_dict = create_dict(train_ref, train_target)
 
     # create model
     model = Model(num_classes, image_height, image_width)
 
+
+    # We are going to use target label as the train reference.
     # train MCN without histogram loss
-    target_label_dict = None
-    trainMCN(model, ref_dict_list, target_dict_list, target_label_dict)
+    trainMCN(model, ref_dict, target_dict, ref_dict)
+
+
 
     # train everything 
     train_everything(model, ref_dict_list, target_dict_list, target_label_dict) 

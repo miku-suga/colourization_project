@@ -14,17 +14,13 @@ def get_tf_dataset():
     train_data, _ = tfds.load('places365_small', split='train[:100]', batch_size=-1, as_supervised=True)
     test_data, _ = tfds.load('places365_small', split='train[:100]', batch_size=-1, as_supervised=True)
 
-    print (tf.shape(train_data))
+    print(tf.shape(train_data))
 
     train_data = tfds.as_numpy(train_data)
     test_data = tfds.as_numpy(test_data)
 
-    print (tf.shape(train_data))
+    print(tf.shape(train_data))
     # test_data = tfds.as_numpy(test_data)
-
-    # Comment this part out if we're using the full dataset:
-    # train_data = train_data[:60000]
-    # test_data = test_data[:10000]
 
     return train_data, test_data
 
@@ -44,7 +40,7 @@ def process_img(im):
         ab_ts.append(lab_t[1:2] / 110.0)
     return l_ts, ab_ts
 
-def create_dict(targets, refs):
+def create_dict(refs, targets):
     t_l_list, t_ab_list, t_hist_list = [], [], []
     r_l_list, r_ab_list, r_hist_list = [], [], []
 
@@ -64,19 +60,29 @@ def create_dict(targets, refs):
         r_l_list.append(r_l)
         r_ab_list.append(r_ab)
         r_hist_list.append(r_hist)
+    
+    ref_dict = {
+        'r_l' : r_l_list,
+        'r_ab' : r_ab_list,
+        'r_hist' : r_hist_list
+    }
 
     target_dict = {
         't_l' : t_l_list,
         't_ab' : t_ab_list,
         't_hist' : t_hist_list
     }
-    ref_dict = {
-        'r_l' : r_l_list,
-        'r_ab' : r_ab_list,
-        'r_hist' : r_hist_list
-    }
+    
         
-    return target_dict, ref_dict
+    return ref_dict, target_dict
+
+def get_target(dataset):
+    target_dataset = []
+    for i in dataset:
+        target_dataset.append(rgb2gray(i))
+    return target_dataset
+
+
 
 if __name__ == "__main__":
     ## load data
@@ -84,15 +90,19 @@ if __name__ == "__main__":
     print("dataset loaded")
 
     ## resize images
-    train_data = cv2.resize(train_data, (64, 64))
-    test_data = cv2.resize(test_data, (64, 64))
+    for img in train_data:
+        img = cv2.resize(img, (64, 64))
+    for img in test_data:
+        img = cv2.resize(img, (64, 64))
+    # train_data = cv2.resize(train_data, (64, 64))
+    # test_data = cv2.resize(test_data, (64, 64))
 
     ## set refs to the original colored image
-    train_ref = train_data
-    test_ref = test_data
+    train_ref = train_data[:]
+    test_ref = test_data[:]
 
     ## set input images to the greyscaled images
-    train_target= []
+    train_target = []
     test_target = []
     for i in train_data:
         train_target.append(rgb2gray(i))
@@ -103,4 +113,4 @@ if __name__ == "__main__":
     train_dict_1, train_dict_2 = create_dict(train_target, train_ref)
     test_dict_1, test_dict_2 = create_dict(test_target, test_ref)
 
-    print (len(train_dict_1))
+    print(len(train_dict_1))
