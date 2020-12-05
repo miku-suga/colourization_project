@@ -32,7 +32,7 @@ def trainMCN(model, reference_dict, target_dict, target_label_dict):
             hist_loss = model.loss_hist(batch_r_hist, batch_t_hist)
             tv_reg_loss = loss_tv(batch_t_ab)
 
-            #IM STILL FIGURING OUT how to get the D value -miku
+            #figuring out the D value
             pass
         
         gradients = tape.gradient(loss, model.trainable_variables)

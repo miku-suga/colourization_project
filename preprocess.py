@@ -81,7 +81,7 @@ def create_dict(targets, refs):
 if __name__ == "__main__":
     ## load data
     train_data, test_data = get_tf_dataset()
-    print ("dataset loaded")
+    print("dataset loaded")
 
     ## resize images
     train_data = cv2.resize(train_data, (64, 64))
