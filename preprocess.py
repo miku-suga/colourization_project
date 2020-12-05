@@ -72,7 +72,6 @@ def create_dict(refs, targets):
         't_ab' : t_ab_list,
         't_hist' : t_hist_list
     }
-    
         
     return ref_dict, target_dict
 
