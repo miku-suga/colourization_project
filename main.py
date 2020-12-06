@@ -18,7 +18,7 @@ def trainMCN(model, ref_dict, target_dict, target_l_dict):
     t_lhist, t_lab, t_ll = target_l_dict["r_hist"], target_l_dict["r_ab"], target_l_dict["r_l"]
 
     num_inputs = len(train_data)
-    for i in range(0, num_inputs - model.batch_size_1, model.batch_size)_1:
+    for i in range(0, num_inputs - model.batch_size_1, model.batch_size):
         batch_r_hist = r_hist[i:i+model.batch_size_1]
         batch_r_ab = r_ab[i:i+model.batch_size_1]
         batch_r_l = r_l[i:i+model.batch_size_1]
@@ -57,16 +57,14 @@ def visualize_results(images):
     plt.show()
 
 def main():
-    """ num_threads = 0
-    serial_batches = True
-    no_flip = True
-    display_id = -1 """
-
     image_height = 64
     image_width = 64
     num_classes = 10
+    batch_size = 32
 
-    train_data, test_data = get_tf_dataset()
+
+    train_data = get_tf_dataset(2, 'train', 10)
+    test_data = get_tf_dataset(2, 'test', 10)
 
     train_ref = train_data[:]
     train_target = get_target(train_data)
@@ -95,7 +93,6 @@ def main():
 
     # visualize
     visualize_results(fake_img_3)
-
 
 if __name__ == '__main__':
     main()
