@@ -11,7 +11,7 @@ class Model(tf.keras.Model):
         self.height = img_height
         self.width = img_width
         self.num_classes = num_classes
-        
+
         self.encoder = Encoder()
         self.decoder_1 = Decoder1()
         self.decoder_2 = Decoder2()

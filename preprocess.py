@@ -8,12 +8,15 @@ import cv2
 DATA_BUFFER_SIZE = 256
 IMAGE_SIZE = 64
 
+
 def preprocess_dataset(img, label):
     l_ts, ab_ts = process_img(img.numpy())
-    return (l_ts, ab_ts, label)
+    hist = get_histrogram(img.numpy())
+    
+    return (l_ts, ab_ts, hist, label)
 
 def eager_preprocessing(data):
-  return tf.py_function(preprocess_dataset, [data['image'], data['label']], (tf.float32, tf.float32, tf.int64))
+  return tf.py_function(preprocess_dataset, [data['image'], data['label']], (tf.float32, tf.float32, tf.float32, tf.int64))
 
 '''
 Returned as tensor data type
@@ -23,6 +26,8 @@ def get_tf_dataset(batch_size, split, max_size=-1):
     dataset = tfds.load('places365_small', split=split, shuffle_files=True)
     dataset = dataset.shuffle(DATA_BUFFER_SIZE).take(max_size).map(eager_preprocessing)
     dataset = dataset.batch(batch_size).prefetch(tf.data.experimental.AUTOTUNE)
+
+    # TODO: filter to only 50 labels?
 
     return dataset
 
@@ -40,47 +45,15 @@ def process_img(im):
 
     return l_ts, ab_ts
 
-def create_dict(refs, targets):
-    t_l_list, t_ab_list, t_hist_list = [], [], []
-    r_l_list, r_ab_list, r_hist_list = [], [], []
-
-    for i in range (len(targets)):
-        target = targets[i]
-        reference = refs[i]
-        t_l, t_ab = process_img(target)
-        r_l, r_ab = process_img(reference)
-
-        # TODO: fix this
-        t_hist = 1
-        r_hist = 1
-
-        t_l_list.append(t_l)
-        t_ab_list.append(t_ab)
-        t_hist_list.append(t_hist)
-        r_l_list.append(r_l)
-        r_ab_list.append(r_ab)
-        r_hist_list.append(r_hist)
-    
-    ref_dict = {
-        'r_l' : r_l_list,
-        'r_ab' : r_ab_list,
-        'r_hist' : r_hist_list
-    }
-
-    target_dict = {
-        't_l' : t_l_list,
-        't_ab' : t_ab_list,
-        't_hist' : t_hist_list
-    }
-        
-    return ref_dict, target_dict
+def get_histrogram(img):
+    #TODO: pls do this
+    return 0
 
 def get_target(dataset):
     target_dataset = []
     for i in dataset:
         target_dataset.append(rgb2gray(i))
     return target_dataset
-
 
 
 if __name__ == "__main__":
@@ -93,11 +66,12 @@ if __name__ == "__main__":
 
     print("dataset loaded")
     for img in train_data.as_numpy_iterator():
-        i_l, i_ab, i_label = img
+        i_l, i_ab, i_hist, i_label = img
         # shape
         # i_l = (batch_size, IMAGE_SIZE, IMAGE_SIZE)
         # i_ab = (batch_size, IMAGE_SIZE, IMAGE_SIZE, 2)
         # i_label = (batch_size)
+        print(i_l, i_ab, i_hist, i_label)
 
     # TODO: randomly pair them with ref
 

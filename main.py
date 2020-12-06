@@ -2,44 +2,36 @@ import os
 import tensorflow as tf
 import tensorflow_datasets as tfds
 import numpy as np
-from preprocess import get_tf_dataset, create_dict
+from preprocess import get_tf_dataset, IMAGE_SIZE
 from model import Model
 from matplotlib import pyplot as plt
 from util import calc_hist
 
 
-def calc_total_loss(classification_loss, smoothL1_los, hist_loss, tv_reg_loss, generator_loss):
-    #TODO:
-    pass
+def calc_total_loss(model, classification_loss, smoothL1_los, hist_loss, tv_reg_loss, generator_loss):
+    total = 0
+    total += model.pixel_weight * smoothL1_los
+    total += model.hist_weight * hist_loss
+    total += model.class_weight * classification_loss
+    total += model.g_weight * generator_loss
+    total += model.tv_weight * tv_reg_loss
+    return total
 
-def trainMCN(model, ref_dict, target_dict, target_l_dict):
-    r_hist, r_ab, r_l = ref_dict["r_hist"], ref_dict["r_ab"], ref_dict['r_l']
-    t_hist, t_ab, t_l = target_dict["t_hist"], target_dict["t_ab"], target_dict["t_l"]
-    t_lhist, t_lab, t_ll = target_l_dict["r_hist"], target_l_dict["r_ab"], target_l_dict["r_l"]
-
-    num_inputs = len(train_data)
-    for i in range(0, num_inputs - model.batch_size_1, model.batch_size):
-        batch_r_hist = r_hist[i:i+model.batch_size_1]
-        batch_r_ab = r_ab[i:i+model.batch_size_1]
-        batch_r_l = r_l[i:i+model.batch_size_1]
-
-        batch_t_hist = t_hist[i:i+model.batch_size_1]
-        batch_t_ab = t_ab[i:i+model.batch_size_1]
-        batch_t_l = t_l[i:i+model.batch_size_1]
-        
-        batch_t_lhist = t_label_ab[i:i+model.batch_size_1]
-        batch_t_lab = t_label_ab[i:i+model.batch_size_1]
-        batch_t_ll = t_label_l[i:i+model.batch_size_1]
+def trainMCN(model, ref_data, target_data, noRef=False):
+    for ref_batch, target_batch in zip(ref_data.as_numpy_iterator(), target_data.as_numpy_iterator()):
+        r_l, r_ab, r_hist, r_label = ref_batch
+        t_l, t_ab, t_hist, t_label = target_batch
 
         with tf.GradientTape() as tape:
-            g_tl, fake_img_1, fake_img_2, fake_img_3 = model(batch_r_hist, batch_r_ab, batch_r_l, batch_t_l)
-            classification_loss = model.loss_class(g_tl, batch_t_ll)
-            smoothL1_loss = model.loss_pixel(batch_t_ab, batch_t_lab)
+            # TODO: review this
+            g_tl, fake_img_1, fake_img_2, fake_img_3 = model(r_hist, r_ab, r_l, t_l)
+            classification_loss = model.loss_class(g_tl, t_label)
+            smoothL1_loss = model.loss_pixel(r_ab, t_ab)
             hist_loss = 0
-            tv_reg_loss = loss_tv(batch_t_ab)
-            generator_loss = loss_G(batch_t_lab)
+            tv_reg_loss = model.loss_tv(t_ab)
+            generator_loss = model.loss_G(t_ab)
 
-            total_loss = calc_total_loss(classification_loss, smoothL1_los, hist_loss, tv_reg_loss, generator_loss)
+            total_loss = calc_total_loss(classification_loss, smoothL1_loss, hist_loss, tv_reg_loss, generator_loss)
         
         gradients = tape.gradient(total_loss, model.trainable_variables)
         model.optimizer.apply_gradients(zip(gradients, model.trainable_variables))
@@ -57,42 +49,31 @@ def visualize_results(images):
     plt.show()
 
 def main():
-    image_height = 64
-    image_width = 64
-    num_classes = 10
+    num_classes = 365
     batch_size = 32
+    training_size = 100
+    testing_size = 10
 
+    train_target_data = get_tf_dataset(batch_size, 'train', training_size)
+    train_ref_data = get_tf_dataset(batch_size, 'train', training_size) # TODO: fix this?
+    test_data = get_tf_dataset(batch_size, 'test', testing_size)
 
-    train_data = get_tf_dataset(2, 'train', 10)
-    test_data = get_tf_dataset(2, 'test', 10)
-
-    train_ref = train_data[:]
-    train_target = get_target(train_data)
-    
-
-    # call function to turn train_data/label into a dict consisting of l, ab, hist
-    ref_dict, target_dict = create_dict(train_ref, train_target)
-
-    # create model
-    model = Model(num_classes, image_height, image_width)
-
+    model = Model(num_classes, IMAGE_SIZE, IMAGE_SIZE)
 
     # We are going to use target label as the train reference.
     # train MCN without histogram loss
-    trainMCN(model, ref_dict, target_dict, ref_dict)
-
-
+    trainMCN(model, train_target_data, train_target_data, noRef=True)
 
     # train everything 
-    train_everything(model, ref_dict_list, target_dict_list, target_label_dict) 
+    trainMCN(model, train_ref_data, train_target_data)
 
-    # call model on first 10 test examples
-    test_target = target_dict_list[:10]
-    test_ref = ref_dict_list[:10]
-    g_tl, fake_img_1, fake_img_2, fake_img_3 = model(test_ref['hist'], test_ref['ab'], test_ref['l'], test_target['l'])
+    # # call model on first 10 test examples
+    # test_target = target_dict_list[:10]
+    # test_ref = ref_dict_list[:10]
+    # g_tl, fake_img_1, fake_img_2, fake_img_3 = model(test_ref['hist'], test_ref['ab'], test_ref['l'], test_target['l'])
 
-    # visualize
-    visualize_results(fake_img_3)
+    # # visualize
+    # visualize_results(fake_img_3)
 
 if __name__ == '__main__':
     main()
