@@ -29,7 +29,7 @@ class Model(tf.keras.Model):
         self.g_weight = 0.1
         self.tv_weight = 10
 
-        self.optimizer = tf.keras.optimizers.Adam(learning_rate=0.001)
+        self.optimizer = tf.keras.optimizers.Adam(learning_rate=0.0002)
 
     def call(self, r_hist, r_ab, r_l, t_l, is_testing=False):
         """ get features and output of convolution layers from encoder """
