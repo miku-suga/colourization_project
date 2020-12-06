@@ -11,8 +11,8 @@ class Model(tf.keras.Model):
         self.height = img_height
         self.width = img_width
         self.num_classes = num_classes
-        
-        self.encoder = Encoder()
+
+        self.encoder = Encoder(img_height, img_width)
         self.decoder_1 = Decoder1()
         self.decoder_2 = Decoder2()
         self.decoder_3 = Decoder3()
@@ -34,17 +34,17 @@ class Model(tf.keras.Model):
 
     def call(self, r_hist, r_ab, r_l, t_l, is_testing=False):
         """ get features and output of convolution layers from encoder """
-        f_rl, f_tl, enc_output_1, layer_1, layer_2, layer_3 = self.encoder(
+        feat_rl, feat_tl, enc_output, layer_1, layer_2, layer_3 = self.encoder(
             r_l, t_l)
-
+        
         f_global1, f_global2, f_global3 = self.cdm(r_hist)
-        g_tl, corr, f_s1, f_s2, f_s3 = self.sam(f_tl, f_rl, r_ab)
+        g_tl, corr, align_1, align_2, align_3 = self.sam(feat_tl, feat_rl, r_ab, enc_output)
 
         gate_out1, gate_out2, gate_out3 = self.gfm(
-            corr, f_s1, f_s2, f_s3, f_global1, f_global2, f_global3)
+            corr, align_1, align_2, align_3, f_global1, f_global2, f_global3)
 
         decoder_output1, fake_img_1 = self.decoder_1(
-            gate_out1, enc_output_1, layer_3)
+            gate_out1, enc_output, layer_3)
         decoder_output2, fake_img_2 = self.decoder_2(
             gate_out2, decoder_output1, layer_2)
         decoder_output3, fake_img_3 = self.decoder_3(

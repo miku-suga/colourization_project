@@ -34,8 +34,11 @@ class ResBlock(tf.keras.Model):
 
 
 class Encoder(tf.keras.Model):
-    def __init__(self):
+    def __init__(self, img_height, img_width):
         super(Encoder, self).__init__()
+
+        self.height = img_height
+        self.width = img_width
 
         """ Init layers """
         self.conv_1_1 = tf.keras.layers.Conv2D(
@@ -91,40 +94,58 @@ class Encoder(tf.keras.Model):
         self.interpolate_6 = tf.keras.layers.UpSampling2D(
             size=4, interpolation='bilinear')
 
+    def encode(self, img_l):
+        layer_1 = self.batch_norm_1(self.conv_1_2(self.conv_1_1(img_l)))
+        assert layer_1.shape[1:] == (self.height, self.width, 64)
+
+        layer_2 = self.batch_norm_2(self.conv_2_2(
+            self.conv_2_1(layer_1[:, ::2, ::2, :])))
+        assert layer_2.shape[1:] == (self.height // 2, self.width // 2, 128)
+
+        layer_3 = self.batch_norm_3(self.conv_3_3(
+            self.conv_3_2(self.conv_3_1(layer_2[:, ::2, ::2, :]))))
+        assert layer_3.shape[1:] == (self.height // 4, self.width // 4, 256)
+
+        layer_4 = self.batch_norm_4(self.conv_4_3(
+            self.conv_4_2(self.conv_4_1(layer_3[:, ::2, ::2, :]))))
+        assert layer_4.shape[1:] == (self.height // 8, self.width // 8, 512)
+        
+        layer_5 = self.batch_norm_5(self.conv_5_3(
+            self.conv_5_2(self.conv_5_1(layer_4))))
+        assert layer_5.shape[1:] == (self.height // 8, self.width // 8, 512)
+
+        layer_6 = self.batch_norm_6(self.conv_6_3(
+            self.conv_6_2(self.conv_6_1(layer_5))))
+        assert layer_6.shape[1:] == (self.height // 8, self.width // 8, 512)
+
+        inter_1 = layer_1[:, ::2, ::2, :]
+        inter_2 = layer_2
+        inter_3 = self.interpolate_3(layer_3)
+        inter_4 = self.interpolate_4(layer_4)
+        inter_5 = self.interpolate_5(layer_5)
+        inter_6 = self.interpolate_6(layer_6)
+
+        assert inter_1.shape[1:] == (self.height // 2, self.width // 2, 64)
+        assert inter_2.shape[1:] == (self.height // 2, self.width // 2, 128)
+        assert inter_3.shape[1:] == (self.height // 2, self.width // 2, 256)
+        assert inter_4.shape[1:] == (self.height // 2, self.width // 2, 512)
+        assert inter_5.shape[1:] == (self.height // 2, self.width // 2, 512)
+        assert inter_6.shape[1:] == (self.height // 2, self.width // 2, 512)
+
+        feat_l = tf.concat([inter_1, inter_2, inter_3, inter_4, inter_5, inter_6], axis=-1)
+        
+        assert feat_l.shape[1:] == (self.height // 2, self.width // 2, 1984)
+
+        return feat_l, layer_1, layer_2, layer_3, layer_6
+
+
     def call(self, r_l, t_l, is_testing=False):
-        layer_1_1 = self.batch_norm_1(self.conv_1_2(self.conv_1_1(r_l)))
-        layer_1_2 = self.batch_norm_2(self.conv_2_2(
-            self.conv_2_1(layer_1_1[:, :, ::2, ::2])))
-        layer_1_3 = self.batch_norm_3(self.conv_3_3(
-            self.conv_3_2(self.conv_3_1(layer_1_2[:, :, ::2, ::2]))))
-        layer_1_4 = self.batch_norm_4(self.conv_4_3(
-            self.conv_4_2(self.conv_4_1(layer_1_3[:, :, ::2, ::2]))))
-        layer_1_5 = self.batch_norm_5(self.conv_5_3(
-            self.conv_5_2(self.conv_5_1(layer_1_4))))
-        layer_1_6 = self.batch_norm_6(self.conv_6_3(
-            self.conv_6_2(self.conv_6_1(layer_1_5))))
+        # encoding the reference image
+        feat_rl, _, _, _, _ = self.encode(r_l)
+        # encoding the target image
+        feat_tl, layer_2_1, layer_2_2, layer_2_3, layer_2_6 = self.encode(t_l)
 
-        # TODO: fix me, ordering
-        interpolate_1 = layer_1_1[:, ::2, ::2, :]
-        t = tf.concat([interpolate_1, layer_1_2, self.interpolate_3(layer_1_3),
-                       self.interpolate_4(layer_1_4), self.interpolate_5(layer_1_5), self.interpolate_6(layer_1_6)], axis=1)
-
-        layer_2_1 = self.batch_norm_1(self.conv_1_2(self.conv_1_1(t_l)))
-        layer_2_2 = self.batch_norm_2(self.conv_2_2(
-            self.conv_2_1(layer_2_1[:, :, ::2, ::2])))
-        layer_2_3 = self.batch_norm_3(self.conv_3_3(
-            self.conv_3_2(self.conv_3_1(layer_2_2[:, :, ::2, ::2]))))
-        layer_2_4 = self.batch_norm_4(self.conv_4_3(
-            self.conv_4_2(self.conv_4_1(layer_2_3[:, :, ::2, ::2]))))
-        layer_2_5 = self.batch_norm_5(self.conv_5_3(
-            self.conv_5_2(self.conv_5_1(layer_2_4))))
-        layer_2_6 = self.batch_norm_6(self.conv_6_3(
-            self.conv_6_2(self.conv_6_1(layer_2_5))))
-
-        r = tf.concat([self.interpolate_1(layer_2_1), layer_2_2, self.interpolate_3(layer_2_3),
-                       self.interpolate_4(layer_2_4), self.interpolate_5(layer_2_5), self.interpolate_6(layer_2_6)], axis=1)
-
-        return r, t, layer_2_6, layer_2_1, layer_2_2, layer_2_3
+        return feat_rl, feat_tl, layer_2_6, layer_2_1, layer_2_2, layer_2_3
         """ ^^ feature of r, feature of t, feature of t to calculate G_tl, layer_2_1, layer_2_2, layer_2_3 for skip connections """
 
 
