@@ -95,7 +95,7 @@ if __name__ == "__main__":
         img = cv2.resize(img, (64, 64))
     # train_data = cv2.resize(train_data, (64, 64))
     # test_data = cv2.resize(test_data, (64, 64))
-
+ 
     ## set refs to the original colored image
     train_ref = train_data[:]
     test_ref = test_data[:]
