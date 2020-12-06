@@ -29,7 +29,7 @@ class Model(tf.keras.Model):
         self.g_weight = 0.1
         self.tv_weight = 10
 
-        self.optimizer = tf.keras.optimizers.Adam(learning_rate=0.0002)
+        self.optimizer = tf.keras.optimizers.Adam(learning_rate=0.001)
 
     def call(self, r_hist, r_ab, r_l, t_l, is_testing=False):
         """ get features and output of convolution layers from encoder """
@@ -52,7 +52,7 @@ class Model(tf.keras.Model):
 
         return g_tl, fake_img_1, fake_img_2, fake_img_3
 
-    def loss_func(self, t_ab_real, t_ab_out, r_h, t_h_out, discrim_logits, g_tl_out, g_tl_real):
+    def loss_function(self, t_ab_real, t_ab_out, r_h, t_h_out, discrim_logits, g_tl_out, g_tl_real):
         # Classification Loss Function
         loss_class = tf.nn.sparse_softmax_cross_entropy_with_logits(g_tl_real, g_tl_out)
 
@@ -61,7 +61,7 @@ class Model(tf.keras.Model):
 
         # Histogram Loss Function
         loss_hist = 2 * \
-            tf.reduce_sum(tf.divide(tf.square(t_h_out - r_h), (t_h_out + r_h)))
+            tf.reduce_sum(tf.divide(tf.square(t_h_out - r_h), (t_h_out + r_h + 0.1)))
 
         # TV REGULARIZATION Loss Function
         loss_tv = tf.image.total_variation(t_ab_out)
@@ -89,6 +89,8 @@ class Model(tf.keras.Model):
 class Discriminator(tf.keras.Model):
     def __init__(self):
         super(Discriminator, self).__init__()
+
+        self.optimizer = tf.keras.optimizers.Adam(learning_rate=0.001)
 
         self.kernel_size = 3
 

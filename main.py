@@ -13,7 +13,7 @@ def trainMCN(model, discrim, ref_data, target_data, noRef=False):
         r_l, r_ab, r_hist, _ = ref_batch
         t_l, t_ab, t_hist, t_label = target_batch
 
-        with tf.GradientTape() as tape:
+        with tf.GradientTape(persistent=True) as tape:
             g_tl, _, _, t_ab_out = model(
                 r_hist, r_ab, r_l, t_l)
 
@@ -22,19 +22,25 @@ def trainMCN(model, discrim, ref_data, target_data, noRef=False):
             real_logits = discrim(tf.concat([r_l, r_ab], axis=-1))
             t_h_out = get_histrogram(t_ab_out)
 
-            total_loss = model.loss_func(t_ab, t_ab_out, r_hist, t_h_out, fake_logits, g_tl, t_label)
+            total_loss = model.loss_function(t_ab, t_ab_out, r_hist, t_h_out, fake_logits, g_tl, t_label)
+            discrim_loss = discrim.loss_function(fake_logits, real_logits)
 
-        print('batch',i , 'loss=', total_loss)
+        print('\tbatch', i , 'coloring loss =', total_loss)
+        print('\tbatch', i , 'discriminator loss =', discrim_loss)
         i += 1
 
         gradients = tape.gradient(total_loss, model.trainable_variables)
         model.optimizer.apply_gradients(
             zip(gradients, model.trainable_variables))
 
+        discrim_gradients = tape.gradient(discrim_loss, discrim.trainable_variables)
+        discrim.optimizer.apply_gradients(
+            zip(discrim_gradients, discrim.trainable_variables))
+
 
 def visualize_results(images):
     fig = plt.figure()
-    for i in range(len(images)):
+    for i, img in enumerate(images):
         ax = fig.add_subplot(i, 1, 1)
         ax.imshow(images[i], cmap="Greys")
     plt.show()
@@ -43,12 +49,13 @@ def visualize_results(images):
 def main():
     num_classes = 365
     batch_size = 5
-    training_size = 100
+    training_size = 10
     testing_size = 10
 
+    tf.debugging.enable_check_numerics()
+
     train_target_data = get_tf_dataset(batch_size, 'train', training_size)
-    train_ref_data = get_tf_dataset(
-        batch_size, 'train', training_size)
+    train_ref_data = get_tf_dataset(batch_size, 'train', training_size)
     test_target_data = get_tf_dataset(batch_size, 'test', testing_size).take(1)
     test_ref_data = get_tf_dataset(batch_size, 'test', testing_size).take(1)
 
@@ -70,6 +77,7 @@ def main():
 
         # visualize
         visualize_results(fake_img_3)
+        break
 
 
 if __name__ == '__main__':

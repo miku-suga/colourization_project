@@ -179,7 +179,7 @@ class Decoder1(tf.keras.Model):
             256, 3, padding='same', activation='relu')
         self.deconv_2 = tf.keras.layers.Conv2D(
             256, 3, padding='same', activation='relu')
-        self.batch_norm_1 = tf.keras.layers.BatchNormalization()
+        self.batch_norm_2 = tf.keras.layers.BatchNormalization()
 
         self.model_out = tf.keras.layers.Conv2D(
             2, 1, dilation_rate=1, activation='tanh')
@@ -195,7 +195,7 @@ class Decoder1(tf.keras.Model):
         layer_up = self.deconv_up(
             layer_1) + self.deconv_short(layer_3)
 
-        encoder_output = self.batch_norm_1(self.deconv_2(
+        encoder_output = self.batch_norm_2(self.deconv_2(
             self.deconv_1(layer_up)))
 
         fake_img_1 = self.model_out(encoder_output)
@@ -229,7 +229,7 @@ class Decoder2(tf.keras.Model):
         self.relu_1 = tf.keras.layers.ReLU()
         self.deconv = tf.keras.layers.Conv2D(128, 3, padding='same')
         self.relu_2 = tf.keras.layers.ReLU()
-        self.batch_norm_1 = tf.keras.layers.BatchNormalization()
+        self.batch_norm_2 = tf.keras.layers.BatchNormalization()
 
         self.model_out = tf.keras.layers.Conv2D(
             2, 1, dilation_rate=1, activation='tanh')
@@ -242,7 +242,7 @@ class Decoder2(tf.keras.Model):
         layer_1 = self.resblock_2(self.resblock_1(
             self.batch_norm_1(self.resconv_1(enc_output_2_global))))
         layer_up = self.deconv_up(layer_1) + self.deconv_short(layer_2)
-        decoder_output = self.batch_norm_1(
+        decoder_output = self.batch_norm_2(
             self.relu_2(self.deconv(self.relu_1(layer_up))))
         fake_img_2 = self.model_out(decoder_output)
 

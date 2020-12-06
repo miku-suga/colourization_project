@@ -77,7 +77,9 @@ class SemanticAssignmentModule(tf.keras.Model):
         self.height = img_height
         self.width = img_width
 
-        self.batch_norm = tf.keras.layers.BatchNormalization()
+        self.batch_norm_1 = tf.keras.layers.BatchNormalization()
+        self.batch_norm_2 = tf.keras.layers.BatchNormalization()
+        self.batch_norm_3 = tf.keras.layers.BatchNormalization()
 
         self.rab_conv_1_1 = tf.keras.layers.Conv2D(
             64, self.kernel_size, activation='relu', padding='same')
@@ -111,7 +113,7 @@ class SemanticAssignmentModule(tf.keras.Model):
 
         f_rab = self.rab_conv_1_2(self.rab_conv_1_1(r_ab))
         assert f_rab.shape[1:] == (self.height, self.width, 64)
-        f_rab = self.batch_norm(self.rab_conv_2_2(
+        f_rab = self.batch_norm_1(self.rab_conv_2_2(
             self.rab_conv_2_1(f_rab[:, ::2, ::2, :])))
         assert f_rab.shape[1:] == (self.height // 2, self.width // 2, 128)
 
@@ -120,10 +122,10 @@ class SemanticAssignmentModule(tf.keras.Model):
             f_a, [f_a.shape[0], self.height // 2, self.width // 2, 128])
         assert f_a.shape[1:] == (self.height // 2, self.width // 2, 128)
         align_1 = f_a
-        align_2 = self.batch_norm(self.fa_conv_3_2(
+        align_2 = self.batch_norm_2(self.fa_conv_3_2(
             self.fa_conv_3_1(align_1[:, ::2, ::2, :])))
         assert align_2.shape[1:] == (self.height // 4, self.width // 4, 256)
-        align_3 = self.batch_norm(self.fa_conv_4_2(
+        align_3 = self.batch_norm_3(self.fa_conv_4_2(
             self.fa_conv_4_1(align_2[:, ::2, ::2, :])))
         assert align_3.shape[1:] == (self.height // 8, self.width // 8, 512)
 
