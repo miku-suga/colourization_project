@@ -45,19 +45,20 @@ def trainMCN(model, discrim, ref_data, target_data, noRef=False):
 
 
 def visualize_results(images):
-    fig = plt.figure()
-    for i, img in enumerate(images):
-        print(img.shape)
-        ax = fig.add_subplot(1, 1, i)
-        ax.imshow(img, cmap="Greys")
-    plt.show()
+    # fig = plt.figure()
+    # for i, img in enumerate(images):
+    for img in images:
+        # ax = fig.add_subplot(5, 1, i)
+        img = img[:,:]
+        plt.imshow(img, cmap="Greys")
+    # plt.show()
 
 
 def main():
     num_classes = 365
     batch_size = 5
-    training_size = 10
-    testing_size = 10
+    training_size = 1
+    testing_size = 1
 
     tf.debugging.enable_check_numerics()
 
