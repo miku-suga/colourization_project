@@ -64,9 +64,9 @@ class Model(tf.keras.Model):
 
         # Histogram Loss Function
         loss_hist_1 = self.hist_weight * 2 * \
-            tf.reduce_sum(tf.divide(tf.square(t_h_out_1 - tf.nn.max_pool(r_h, 4, 4, 'SAME')), (t_h_out_1 + tf.nn.max_pool(r_h, 4, 4, 'SAME') + 0.1)))
+            tf.reduce_sum(tf.divide(tf.square(t_h_out_1 - r_h), (t_h_out_1 + r_h + 0.1)))
         loss_hist_2 = self.hist_weight * 2 * \
-            tf.reduce_sum(tf.divide(tf.square(t_h_out_2 - tf.nn.max_pool(r_h, 2, 2, 'SAME')), (t_h_out_2 + tf.nn.max_pool(r_h, 2, 2, 'SAME') + 0.1)))
+            tf.reduce_sum(tf.divide(tf.square(t_h_out_2 - r_h), (t_h_out_2 + r_h + 0.1)))
         loss_hist_3 = self.hist_weight * 2 * \
             tf.reduce_sum(tf.divide(tf.square(t_h_out_3 - r_h), (t_h_out_3 + r_h + 0.1))) 
 
