@@ -109,7 +109,7 @@ class Encoder(tf.keras.Model):
         layer_4 = self.batch_norm_4(self.conv_4_3(
             self.conv_4_2(self.conv_4_1(layer_3[:, ::2, ::2, :]))))
         assert layer_4.shape[1:] == (self.height // 8, self.width // 8, 512)
-        
+
         layer_5 = self.batch_norm_5(self.conv_5_3(
             self.conv_5_2(self.conv_5_1(layer_4))))
         assert layer_5.shape[1:] == (self.height // 8, self.width // 8, 512)
@@ -132,12 +132,14 @@ class Encoder(tf.keras.Model):
         assert inter_5.shape[1:] == (self.height // 2, self.width // 2, 512)
         assert inter_6.shape[1:] == (self.height // 2, self.width // 2, 512)
 
-        feat_l = tf.concat([inter_1, inter_2, inter_3, inter_4, inter_5, inter_6], axis=-1)
-        
+        feat_l = tf.concat(
+            [inter_1, inter_2, inter_3, inter_4, inter_5, inter_6], axis=-1)
+
         assert feat_l.shape[1:] == (self.height // 2, self.width // 2, 1984)
 
         return feat_l, layer_1, layer_2, layer_3, layer_6
 
+    """ returns feature of r, feature of t, feature of t to calculate G_tl, layer_2_1, layer_2_2, layer_2_3 for skip connections """
 
     def call(self, r_l, t_l, is_testing=False):
         # encoding the reference image
@@ -146,7 +148,6 @@ class Encoder(tf.keras.Model):
         feat_tl, layer_2_1, layer_2_2, layer_2_3, layer_2_6 = self.encode(t_l)
 
         return feat_rl, feat_tl, layer_2_6, layer_2_1, layer_2_2, layer_2_3
-        """ ^^ feature of r, feature of t, feature of t to calculate G_tl, layer_2_1, layer_2_2, layer_2_3 for skip connections """
 
 
 """ 
@@ -167,22 +168,17 @@ class Decoder1(tf.keras.Model):
         super(Decoder1, self).__init__()
 
         """ Init layers """
-        self.padding_1 = tf.keras.layers.ZeroPadding2D(padding=(1, 1))
         self.resconv_1 = tf.keras.layers.Conv2D(
             512, 3, activation='relu', padding='same')
         self.batch_norm_1 = tf.keras.layers.BatchNormalization()
-        self.padding_2 = tf.keras.layers.ZeroPadding2D(padding=(1, 1))
         self.deconv_up = tf.keras.layers.Conv2DTranspose(
             256, 4, strides=2, padding='same')
-        self.padding_3 = tf.keras.layers.ZeroPadding2D(padding=(1, 1))
-        self.deconv_short = tf.keras.layers.Conv2D(256, 3, padding='same')
-        self.relu_1 = tf.keras.layers.ReLU()
-        self.padding_4 = tf.keras.layers.ZeroPadding2D(padding=(1, 1))
-        self.deconv_1 = tf.keras.layers.Conv2D(256, 3, padding='same')
-        self.relu_2 = tf.keras.layers.ReLU()
-        self.padding_5 = tf.keras.layers.ZeroPadding2D(padding=(1, 1))
-        self.deconv_2 = tf.keras.layers.Conv2D(256, 3, padding='same')
-        self.relu_3 = tf.keras.layers.ReLU()
+        self.deconv_short = tf.keras.layers.Conv2D(
+            256, 3, padding='same', activation='relu')
+        self.deconv_1 = tf.keras.layers.Conv2D(
+            256, 3, padding='same', activation='relu')
+        self.deconv_2 = tf.keras.layers.Conv2D(
+            256, 3, padding='same', activation='relu')
         self.batch_norm_1 = tf.keras.layers.BatchNormalization()
 
         self.model_out = tf.keras.layers.Conv2D(
@@ -194,11 +190,14 @@ class Decoder1(tf.keras.Model):
     def call(self, M1, enc_output_1, layer_3, is_testing=False):
         enc_output_1_global = enc_output_1 + M1
         layer_1 = self.resblock_2(self.resblock_1(self.batch_norm_1(
-            self.resconv_1(self.padding_1(enc_output_1_global)))))
-        layer_up = self.deconv_up(self.padding_2(
-            layer_1)) + self.deconv_short(self.padding_3(layer_3))
-        encoder_output = self.batch_norm_1(self.relu_3(self.deconv_2(self.padding_5(
-            self.relu_2(self.deconv_1(self.padding_4(self.relu_1(layer_up))))))))
+            self.resconv_1(enc_output_1_global))))
+
+        layer_up = self.deconv_up(
+            layer_1) + self.deconv_short(layer_3)
+
+        encoder_output = self.batch_norm_1(self.deconv_2(
+            self.deconv_1(layer_up)))
+
         fake_img_1 = self.model_out(encoder_output)
 
         return encoder_output, fake_img_1
@@ -280,14 +279,16 @@ class Decoder3(tf.keras.Model):
         self.model_out = tf.keras.layers.Conv2D(
             2, 1, dilation_rate=1, activation='tanh')
 
-        self.resblock_1 = ResBlock(128)
         self.resblock_2 = ResBlock(128)
+        self.resblock_3 = ResBlock(128)
 
     def call(self, M3, decoder_output2, layer_1, is_testing=False):
-        enc_output_3_global = decoder_output2 + M3
-        layer_1 = self.resblock_2(self.resblock_1(
-            self.batch_norm_1(self.resconv_1(enc_output_3_global))))
-        layer_up = self.deconv_up(layer_1) + self.deconv_short(layer_1)
+        conv9_3_global = decoder_output2 + M3
+        conv9_resblock1 = self.batch_norm_1(self.resconv_1(conv9_3_global))
+        conv9_resblock2 = self.resblock_2(conv9_resblock1)
+        conv9_resblock3 = self.resblock_3(conv9_resblock2)
+        
+        layer_up = self.deconv_up(conv9_resblock3) + self.deconv_short(layer_1)
         decoder_output = self.leaky_relu(self.deconv(self.relu(layer_up)))
         fake_img_3 = self.model_out(decoder_output)
 

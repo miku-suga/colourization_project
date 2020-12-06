@@ -30,15 +30,15 @@ class Model(tf.keras.Model):
         self.tv_weight = 10
 
         self.optimizer = tf.keras.optimizers.Adam(learning_rate=0.0002)
-        self.discrim = Discriminator()
 
     def call(self, r_hist, r_ab, r_l, t_l, is_testing=False):
         """ get features and output of convolution layers from encoder """
         feat_rl, feat_tl, enc_output, layer_1, layer_2, layer_3 = self.encoder(
             r_l, t_l)
-        
+
         f_global1, f_global2, f_global3 = self.cdm(r_hist)
-        g_tl, corr, align_1, align_2, align_3 = self.sam(feat_tl, feat_rl, r_ab, enc_output)
+        g_tl, corr, align_1, align_2, align_3 = self.sam(
+            feat_tl, feat_rl, r_ab, enc_output)
 
         gate_out1, gate_out2, gate_out3 = self.gfm(
             corr, align_1, align_2, align_3, f_global1, f_global2, f_global3)
@@ -47,52 +47,43 @@ class Model(tf.keras.Model):
             gate_out1, enc_output, layer_3)
         decoder_output2, fake_img_2 = self.decoder_2(
             gate_out2, decoder_output1, layer_2)
-        decoder_output3, fake_img_3 = self.decoder_3(
+        _, fake_img_3 = self.decoder_3(
             gate_out3, decoder_output2, layer_1)
 
         return g_tl, fake_img_1, fake_img_2, fake_img_3
 
+    def loss_func(self, t_ab_real, t_ab_out, r_h, t_h_out, discrim_logits, g_tl_out, g_tl_real):
+        # Classification Loss Function
+        loss_class = tf.nn.sparse_softmax_cross_entropy_with_logits(g_tl_real, g_tl_out)
 
-    """ 
-        Classification Loss Function 
-        Input: g_tl and G label g_tl_label
-        Output: Loss
-    """
+        # Smooth L1 Loss Function
+        loss_pixel = (tf.keras.losses.Huber())(t_ab_real, t_ab_out)
 
-    def loss_class(self, g_tl, g_tl_label):
-        loss_func = tf.keras.losses.CategoricalCrossentropy()
-        return loss_func(g_tl_label, g_tl).numpy()
+        # Histogram Loss Function
+        loss_hist = 2 * \
+            tf.reduce_sum(tf.divide(tf.square(t_h_out - r_h), (t_h_out + r_h)))
 
-    """ 
-        Smooth L1 Loss Function 
-        Input: Output image t_ab and target label t_label
-        Output: Loss
-    """
+        # TV REGULARIZATION Loss Function
+        loss_tv = tf.image.total_variation(t_ab_out)
 
-    def loss_pixel(self, t_ab, t_label):
-        return tf.losses.huber_loss(t_label, t_ab)
+        # generator loss
+        loss_g = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(
+            labels=tf.ones_like(discrim_logits), logits=discrim_logits))
 
-    """ 
-        Histogram Loss Function 
-        Input: Histogram of r and histogram of t
-        Output: Loss
-    """
+        print('loss_class', loss_class)
+        print('loss_pixel', loss_pixel.numpy())
+        print('loss_hist', loss_hist)
+        print('loss_tv', loss_tv)
+        print('loss_g', loss_g)
 
-    def loss_hist(self, r_h, t_h):
-        return 2 * tf.reduce_sum(tf.divide(tf.square(t_h - r_h), (t_h + r_h)))
+        total = 0
+        total += self.class_weight * loss_class
+        total += self.pixel_weight * loss_pixel
+        total += self.hist_weight * loss_hist
+        total += self.tv_weight * loss_tv
+        total += self.g_weight * loss_g
 
-    """ 
-        TV REGULARIZATION Loss Function 
-        Input: t_ab
-        Output: variation
-    """
-
-    def loss_tv(self, t_ab):
-        return tf.image.total_variation(t_ab)
-
-    def loss_G(self, t_lab):
-        result = 0.5 * E ((self.discrim(t_lab) - 1) ** 2)   # have to figure out what's E
-        return tf.math.reduce_min(result)
+        return tf.reduce_mean(total)
 
 
 class Discriminator(tf.keras.Model):
@@ -118,9 +109,11 @@ class Discriminator(tf.keras.Model):
         self.conv_4_2 = tf.keras.layers.Conv2D(
             256, self.kernel_size, activation='relu', padding='same')
 
-        self.dense_1 = tf.keras.layers.Dense(512, activation='relu')
-        self.dense_2 = tf.keras.layers.Dense(512, activation='relu')
-        self.dense_3 = tf.keras.layers.Dense(2, activation='softmax')
+        self.dense_1 = tf.keras.layers.Dense(512)
+        self.dense_1_relu = tf.keras.layers.LeakyReLU(alpha=0.2)
+        self.dense_2 = tf.keras.layers.Dense(512)
+        self.dense_2_relu = tf.keras.layers.LeakyReLU(alpha=0.2)
+        self.dense_3 = tf.keras.layers.Dense(1)
 
     def call(self, images):
         out = self.conv_1_1(images)
@@ -137,11 +130,16 @@ class Discriminator(tf.keras.Model):
         out = tf.nn.max_pool2d(out, 2, strides=2, padding='VALID')
 
         out = tf.reshape(out, [out.shape[0], -1])
-        out = self.dense_1(out)
-        out = self.dense_2(out)
+        out = self.dense_1_relu(self.dense_1(out))
+        out = self.dense_2_relu(self.dense_2(out))
         out = self.dense_3(out)
 
         return out
 
-    def loss(self):
-        pass
+    @tf.function
+    def loss_function(self, logits_fake, logits_real):
+        D_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(
+            labels=tf.zeros_like(logits_fake), logits=logits_fake))
+        D_loss += tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(
+            labels=tf.ones_like(logits_real), logits=logits_real))
+        return D_loss

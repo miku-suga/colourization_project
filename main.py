@@ -2,73 +2,75 @@ import os
 import tensorflow as tf
 import tensorflow_datasets as tfds
 import numpy as np
-from preprocess import get_tf_dataset, IMAGE_SIZE
-from model import Model
+from preprocess import get_tf_dataset, get_histrogram, IMAGE_SIZE
+from model import Model, Discriminator
 from matplotlib import pyplot as plt
 from util import calc_hist
 
-
-def calc_total_loss(model, classification_loss, smoothL1_los, hist_loss, tv_reg_loss, generator_loss):
-    total = 0
-    total += model.pixel_weight * smoothL1_los
-    total += model.hist_weight * hist_loss
-    total += model.class_weight * classification_loss
-    total += model.g_weight * generator_loss
-    total += model.tv_weight * tv_reg_loss
-    return total
-
-def trainMCN(model, ref_data, target_data, noRef=False):
+def trainMCN(model, discrim, ref_data, target_data, noRef=False):
+    i = 0
     for ref_batch, target_batch in zip(ref_data.as_numpy_iterator(), target_data.as_numpy_iterator()):
-        r_l, r_ab, r_hist, r_label = ref_batch
+        r_l, r_ab, r_hist, _ = ref_batch
         t_l, t_ab, t_hist, t_label = target_batch
 
         with tf.GradientTape() as tape:
-            # TODO: review this
-            g_tl, fake_img_1, fake_img_2, fake_img_3 = model(r_hist, r_ab, r_l, t_l)
-            classification_loss = model.loss_class(g_tl, t_label)
-            smoothL1_loss = model.loss_pixel(r_ab, t_ab)
-            hist_loss = 0
-            tv_reg_loss = model.loss_tv(t_ab)
-            generator_loss = model.loss_G(t_ab)
+            g_tl, _, _, t_ab_out = model(
+                r_hist, r_ab, r_l, t_l)
 
-            total_loss = calc_total_loss(classification_loss, smoothL1_loss, hist_loss, tv_reg_loss, generator_loss)
-        
+            output_img = tf.concat([t_l, t_ab_out], axis=-1)
+            fake_logits = discrim(output_img)
+            real_logits = discrim(tf.concat([r_l, r_ab], axis=-1))
+            t_h_out = get_histrogram(t_ab_out)
+
+            total_loss = model.loss_func(t_ab, t_ab_out, r_hist, t_h_out, fake_logits, g_tl, t_label)
+
+        print('batch',i , 'loss=', total_loss)
+        i += 1
+
         gradients = tape.gradient(total_loss, model.trainable_variables)
-        model.optimizer.apply_gradients(zip(gradients, model.trainable_variables))
+        model.optimizer.apply_gradients(
+            zip(gradients, model.trainable_variables))
+
 
 def visualize_results(images):
     fig = plt.figure()
     for i in range(len(images)):
-            ax = fig.add_subplot(i, 1, 1)
-            ax.imshow(images[i], cmap="Greys")
+        ax = fig.add_subplot(i, 1, 1)
+        ax.imshow(images[i], cmap="Greys")
     plt.show()
+
 
 def main():
     num_classes = 365
-    batch_size = 20
+    batch_size = 5
     training_size = 100
     testing_size = 10
 
     train_target_data = get_tf_dataset(batch_size, 'train', training_size)
-    train_ref_data = get_tf_dataset(batch_size, 'train', training_size) # TODO: fix this?
-    test_data = get_tf_dataset(batch_size, 'test', testing_size)
+    train_ref_data = get_tf_dataset(
+        batch_size, 'train', training_size)
+    test_target_data = get_tf_dataset(batch_size, 'test', testing_size).take(1)
+    test_ref_data = get_tf_dataset(batch_size, 'test', testing_size).take(1)
 
     model = Model(num_classes, IMAGE_SIZE, IMAGE_SIZE)
+    discrim = Discriminator()
 
     # We are going to use target label as the train reference.
     # train MCN without histogram loss
-    trainMCN(model, train_target_data, train_target_data, noRef=True)
+    trainMCN(model, discrim, train_target_data, train_target_data, noRef=True)
 
-    # train everything 
-    trainMCN(model, train_ref_data, train_target_data)
+    # train everything
+    trainMCN(model, discrim, train_ref_data, train_target_data)
 
-    # # call model on first 10 test examples
-    # test_target = target_dict_list[:10]
-    # test_ref = ref_dict_list[:10]
-    # g_tl, fake_img_1, fake_img_2, fake_img_3 = model(test_ref['hist'], test_ref['ab'], test_ref['l'], test_target['l'])
+    # call model on first 10 test examples
+    for ref_batch, target_batch in zip(test_ref_data.as_numpy_iterator(), test_target_data.as_numpy_iterator()):
+        r_l, r_ab, r_hist, _ = ref_batch
+        t_l, _, _, _ = target_batch
+        _, _, _, fake_img_3 = model(r_hist, r_ab, r_l, t_l)
 
-    # # visualize
-    # visualize_results(fake_img_3)
+        # visualize
+        visualize_results(fake_img_3)
+
 
 if __name__ == '__main__':
     main()
