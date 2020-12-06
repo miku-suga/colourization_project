@@ -194,7 +194,6 @@ class Decoder1(tf.keras.Model):
         resblock3 = self.resblock_2(resblock2)
 
         layer_up = self.deconv_up(resblock3) + self.deconv_short(layer_3)
-
         encoder_output = self.batch_norm_2(self.deconv_2(self.deconv_1(layer_up)))
         fake_img_1 = self.model_out(encoder_output)
 
@@ -242,8 +241,7 @@ class Decoder2(tf.keras.Model):
         resblock3 = self.resblock_2(resblock2)
         
         layer_up = self.deconv_up(resblock3) + self.deconv_short(layer_2)
-        decoder_output = self.batch_norm_2(
-            self.relu_2(self.deconv(self.relu_1(layer_up))))
+        decoder_output = self.batch_norm_2(self.relu_2(self.deconv(self.relu_1(layer_up))))
         fake_img_2 = self.model_out(decoder_output)
 
         return decoder_output, fake_img_2

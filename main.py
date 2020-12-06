@@ -14,15 +14,21 @@ def trainMCN(model, discrim, ref_data, target_data, noRef=False):
         t_l, t_ab, t_hist, t_label = target_batch
 
         with tf.GradientTape(persistent=True) as tape:
-            g_tl, _, _, t_ab_out = model(
+            g_tl, t_ab_out_1, t_ab_out_2, t_ab_out_3 = model(
                 r_hist, r_ab, r_l, t_l)
 
-            output_img = tf.concat([t_l, t_ab_out], axis=-1)
+            output_img = tf.concat([t_l, t_ab_out_3], axis=-1)
             fake_logits = discrim(output_img)
             real_logits = discrim(tf.concat([r_l, r_ab], axis=-1))
-            t_h_out = get_histrogram(t_ab_out)
+            t_h_out_1 = get_histrogram(t_ab_out_1)
+            t_h_out_2 = get_histrogram(t_ab_out_2)
+            t_h_out_3 = get_histrogram(t_ab_out_3)
 
-            total_loss = model.loss_function(t_ab, t_ab_out, r_hist, t_h_out, fake_logits, g_tl, t_label)
+            if noRef:
+                total_loss = model.loss_function(t_ab, t_ab_out_1, t_ab_out_2, t_ab_out_3, r_hist, t_h_out_1, t_h_out_2, t_h_out_3, fake_logits, g_tl, t_label, True)
+            else:
+                total_loss = model.loss_function(t_ab, t_ab_out_1, t_ab_out_2, t_ab_out_3, r_hist, t_h_out_1, t_h_out_2, t_h_out_3, fake_logits, g_tl, t_label, False)
+
             discrim_loss = discrim.loss_function(fake_logits, real_logits)
 
         print('\tbatch', i , 'coloring loss =', total_loss)
