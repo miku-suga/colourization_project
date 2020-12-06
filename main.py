@@ -36,11 +36,6 @@ def trainMCN(model, ref_data, target_data, noRef=False):
         gradients = tape.gradient(total_loss, model.trainable_variables)
         model.optimizer.apply_gradients(zip(gradients, model.trainable_variables))
 
-def train_everything(model, reference_dict, target_dict, target_label_dict):
-    #TODO:
-    pass
-
-
 def visualize_results(images):
     fig = plt.figure()
     for i in range(len(images)):
@@ -50,7 +45,7 @@ def visualize_results(images):
 
 def main():
     num_classes = 365
-    batch_size = 32
+    batch_size = 20
     training_size = 100
     testing_size = 10
 

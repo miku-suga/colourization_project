@@ -43,11 +43,12 @@ def process_img(im):
     l_ts = lab[:, :, 0] / 50.0 - 1.0
     ab_ts = lab[:, :, 1:] / 110.0
 
+    l_ts = tf.expand_dims(l_ts, axis=-1)
     return l_ts, ab_ts
 
 def get_histrogram(img):
     #TODO: pls do this
-    return 0
+    return tf.zeros([1, 1, 441])
 
 def get_target(dataset):
     target_dataset = []
@@ -68,7 +69,7 @@ if __name__ == "__main__":
     for img in train_data.as_numpy_iterator():
         i_l, i_ab, i_hist, i_label = img
         # shape
-        # i_l = (batch_size, IMAGE_SIZE, IMAGE_SIZE)
+        # i_l = (batch_size, IMAGE_SIZE, IMAGE_SIZE, 1)
         # i_ab = (batch_size, IMAGE_SIZE, IMAGE_SIZE, 2)
         # i_label = (batch_size)
         print(i_l, i_ab, i_hist, i_label)

@@ -16,42 +16,41 @@ class GatedFusionModule(tf.keras.Model):
         super(GatedFusionModule, self).__init__()
 
         """ Init layers """
-        self.kernel_size = 3
+        self.kernel_size = 1
 
         self.height = img_height
         self.width = img_width
 
-        self.C_conv_1 = tf.keras.layers.Conv2D(
-            64, self.kernel_size, strides=(2, 2), activation='relu', padding='same')
-        self.C_conv_2 = tf.keras.layers.Conv2D(
-            128, self.kernel_size, strides=(2, 2), activation='relu', padding='same')
+        self.C_conv_1 = tf.keras.layers.Conv1D(
+            1024, self.kernel_size, activation='relu', padding='same')
+        self.C_conv_2 = tf.keras.layers.Conv1D(
+            1, self.kernel_size, activation='sigmoid', padding='same')
 
     def call(self, corr, align_1, align_2, align_3, global_1, global_2, global_3, is_testing=False):
         conf = self.C_conv_1(corr)
-        assert conf.shape[1:] == (self.height*self.width // 4, 1024, 1)
+        assert conf.shape[1:] == (self.height*self.width // 4, 1024)
         conf = self.C_conv_2(corr)
-        assert conf.shape[1:] == (self.height*self.width // 4, 1, 1)
+        assert conf.shape[1:] == (self.height*self.width // 4, 1)
 
+        conf_1 = tf.reshape(conf, [corr.shape[0], self.height // 2, self.width // 2, 1])
+        conf_2 = conf_1[:, ::2, ::2, :]
+        conf_3 = conf_2[:, ::2, ::2, :]
 
-        conf_1 = tf.reshape(conf, [-1, self.height, self.width, 1])
-        conf_2 = conf_1[:, :, ::2, ::2]
-        conf_3 = conf_2[:, :, ::2, ::2]
+        assert conf_1.shape[1:] == (self.height // 2, self.width // 2, 1)
+        assert conf_2.shape[1:] == (self.height // 4, self.width // 4, 1)
+        assert conf_3.shape[1:] == (self.height // 8, self.width // 8, 1)
 
-        assert conf_1 == (self.height, self.width, 1)
-        assert conf_2 == (self.height // 2, self.width // 2, 1)
-        assert conf_3 == (self.height // 2, self.width // 2, 1)
-
-        global_1 = tf.broadcast_to(global_1, align_1.shape)
+        global_1 = tf.broadcast_to(global_1, align_3.shape)
         global_2 = tf.broadcast_to(global_2, align_2.shape)
-        global_3 = tf.broadcast_to(global_3, align_3.shape)
+        global_3 = tf.broadcast_to(global_3, align_1.shape)
 
-        M3 = align_3 * conf_3 + global_1 * (1 - conf_3)
+        M1 = align_3 * conf_3 + global_1 * (1 - conf_3)
         M2 = align_2 * conf_2 + global_2 * (1 - conf_2)
-        M1 = align_1 * conf_1 + global_3 * (1 - conf_1)
+        M3 = align_1 * conf_1 + global_3 * (1 - conf_1)
 
-        assert M1 == (self.height // 8, self.width // 8, 512)
-        assert M2 == (self.height // 4, self.width // 4, 256)
-        assert M3 == (self.height // 2, self.width // 2, 128)
+        assert M1.shape[1:] == (self.height // 8, self.width // 8, 512)
+        assert M2.shape[1:] == (self.height // 4, self.width // 4, 256)
+        assert M3.shape[1:] == (self.height // 2, self.width // 2, 128)
         
         return M1, M2, M3
 
@@ -77,75 +76,84 @@ class SemanticAssignmentModule(tf.keras.Model):
         self.height = img_height
         self.width = img_width
 
-        self.rab_conv_1 = tf.keras.layers.Conv2D(
-            64, self.kernel_size, activation='relu', padding='same')
-        self.rab_conv_2 = tf.keras.layers.Conv2D(
-            128, self.kernel_size, strides=(2, 2), activation='relu', padding='same')
+        self.batch_norm = tf.keras.layers.BatchNormalization()
 
-        self.fa_conv_1 = tf.keras.layers.Conv2D(
-            128, self.kernel_size, strides=(2, 2), activation='relu', padding='same')
-        self.fa_conv_2 = tf.keras.layers.Conv2D(
-            256, self.kernel_size, strides=(2, 2), activation='relu', padding='same')
-        self.fa_conv_3 = tf.keras.layers.Conv2D(
-            512, self.kernel_size, strides=(2, 2), activation='relu', padding='same')
+        self.rab_conv_1_1 = tf.keras.layers.Conv2D(
+            64, self.kernel_size, activation='relu', padding='same')
+        self.rab_conv_1_2 = tf.keras.layers.Conv2D(
+            64, self.kernel_size, activation='relu', padding='same')
+        self.rab_conv_2_1 = tf.keras.layers.Conv2D(
+            128, self.kernel_size, activation='relu', padding='same')
+        self.rab_conv_2_2 = tf.keras.layers.Conv2D(
+            128, self.kernel_size, activation='relu', padding='same')
+
+        self.fa_conv_3_1 = tf.keras.layers.Conv2D(
+            256, self.kernel_size, activation='relu', padding='same')
+        self.fa_conv_3_2 = tf.keras.layers.Conv2D(
+            256, self.kernel_size, activation='relu', padding='same')
+
+        self.fa_conv_4_1 = tf.keras.layers.Conv2D(
+            512, self.kernel_size, activation='relu', padding='same')
+        self.fa_conv_4_2 = tf.keras.layers.Conv2D(
+            512, self.kernel_size, activation='relu', padding='same')
 
         self.gtl_dense_1 = tf.keras.layers.Dense(512, activation='relu')
         self.gtl_dense_2 = tf.keras.layers.Dense(
             num_classes, activation='softmax')
 
-    def call(self, t_lum, r_lum, r_ab, is_testing=False):
+    def call(self, feat_tl, feat_tr, r_ab, gtl_input, is_testing=False):
         """ takes in r, t, output of encoder, r_ab and spit out correlation matrix features conf_1,2,3, class output G, and f_s1,2,3 """
 
-        assert t_lum.shape[1:] == (self.height // 2, self.width // 2, 1984)
-        assert r_lum.shape[1:] == (self.height // 2, self.width // 2, 1984)
+        assert feat_tl.shape[1:] == (self.height // 2, self.width // 2, 1984)
+        assert feat_tr.shape[1:] == (self.height // 2, self.width // 2, 1984)
         
-        C = self.correlate(t_lum, r_lum)
-        assert C.shape[1:] == (self.height // 4, self.width // 4, 1)
+        C = self.correlate(feat_tl, feat_tr)
 
-        f_rab = self.rab_conv_1(r_ab)
+        f_rab = self.rab_conv_1_2(self.rab_conv_1_1(r_ab))
         assert f_rab.shape[1:] == (self.height, self.width, 64)
-        f_rab = self.rab_conv_2(f_rab)
+        f_rab = self.batch_norm(self.rab_conv_2_2(self.rab_conv_2_1(f_rab[:,::2,::2,:])))
         assert f_rab.shape[1:] == (self.height // 2, self.width // 2, 128)
 
         f_a = self.attention(C, f_rab)
-        assert f_a.shape[1:] == (self.height, self.width, 128)
-        f_s3 = self.fa_conv_1(f_a)
-        assert f_s3.shape[1:] == (self.height // 2, self.width // 2, 128)
-        f_s2 = self.fa_conv_2(f_s3)
-        assert f_s2.shape[1:] == (self.height // 4, self.width // 4, 256)
-        f_s1 = self.fa_conv_3(f_s2)
-        assert f_s1.shape[1:] == (self.height // 8, self.width // 8, 512)
+        f_a = tf.reshape(f_a, [f_a.shape[0], self.height // 2, self.width // 2, 128])
+        assert f_a.shape[1:] == (self.height // 2, self.width // 2, 128)
+        align_1 = f_a
+        align_2 = self.batch_norm(self.fa_conv_3_2(self.fa_conv_3_1(align_1[:,::2,::2,:])))
+        assert align_2.shape[1:] == (self.height // 4, self.width // 4, 256)
+        align_3 = self.batch_norm(self.fa_conv_4_2(self.fa_conv_4_1(align_2[:,::2,::2,:])))
+        assert align_3.shape[1:] == (self.height // 8, self.width // 8, 512)
 
-        mp = tf.nn.max_pool2d(t_lum[3], t_lum.shape,
+        mp = tf.nn.max_pool2d(gtl_input, (gtl_input.shape[1], gtl_input.shape[2]),
                               strides=1, padding="VALID")
         assert mp.shape[1:] == (1, 1, 512)
 
-        g_tl = self.gtl_dense_1(tf.reshape(mp, [len(mp), -1]))
+        g_tl = self.gtl_dense_1(tf.reshape(mp, [mp.shape[0], -1]))
         assert g_tl.shape[1:] == (512)
         g_tl = self.gtl_dense_2(g_tl)
 
-        return (g_tl, C, f_s1, f_s2, f_s3)
+        return (g_tl, C, align_1, align_2, align_3)
 
     def correlate(self, t_lum, r_lum):
-        # TODO: optimize this
-        C = tf.zeros(len(t_lum), len(r_lum))
-        for i in range(len(t_lum)):
-            for j in range(len(r_lum)):
-                norm_fac = tf.norm(t_lum[i]) * tf.norm(r_lum[j])
-                dot_prod = tf.tensordot(t_lum[i], r_lum[j], axes=0)
-                C[i, j] = norm_fac / dot_prod
-        return C
+        t_flatten = tf.reshape(t_lum, [t_lum.shape[0], -1, t_lum.shape[-1]])
+        r_flatten = tf.reshape(r_lum, [r_lum.shape[0], -1, r_lum.shape[-1]])
+        t_flatten = t_flatten / tf.norm(t_flatten, ord=2, axis=-1, keepdims=True)
+        r_flatten = r_flatten / tf.norm(r_flatten, ord=2, axis=-1, keepdims=True)
+        
+        corr = tf.keras.backend.batch_dot(r_flatten, t_flatten, axes=(-1, -1))
+        assert corr.shape[1:] == (self.height * self.width // 4, self.height * self.width // 4)
+
+        return corr
+
 
     def attention(self, C, f_rab):
-        # TODO: optimize this with tensordot
-        exp_c = tf.exp(C)
-        aij = exp_c / tf.reduce_sum(exp_c, axis=1)
+        corr = tf.nn.softmax(C/0.01, axis=1)
+        rab_flatten = tf.reshape(f_rab, [f_rab.shape[0], -1, f_rab.shape[-1]])
 
-        f_a = tf.zeros_like(f_rab)
-        for i in range(len(aij)):
-            f_a[i] = tf.reduce_sum(aij[i] * f_rab, axis=0)
+        # [batch, sm(pixels1), pixels] * [batch, pixels1, filter] = [batch, pixels, filter]
+        align = tf.keras.backend.batch_dot(corr, rab_flatten, axes=(1, 1))
+        assert align.shape[1:] == (self.height * self.width // 4, 128)
 
-        return f_a
+        return align
 
 
 """ 
@@ -178,8 +186,13 @@ class ColorDistributionModule(tf.keras.Model):
             128, self.kernel_size, activation='relu', padding='same')
 
     def call(self, r_hist, is_testing=False):
-        conv_output = self.conv_1_3(self.conv_1_2(self.conv_1_1(r_hist)))
+        conv_output = self.conv_1_1(r_hist)
         assert conv_output.shape[1:] == (1, 1, 512)
+        conv_output = self.conv_1_2(conv_output)
+        assert conv_output.shape[1:] == (1, 1, 512)
+        conv_output = self.conv_1_3(conv_output)
+        assert conv_output.shape[1:] == (1, 1, 512)
+        
         f_1 = self.conv_2_1(conv_output)
         assert f_1.shape[1:] == (1, 1, 512)
         f_2 = self.conv_2_2(conv_output)
