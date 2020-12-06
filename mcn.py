@@ -239,7 +239,7 @@ class Decoder2(tf.keras.Model):
         enc_output_2_global = decoder_output1 + M2
         resblock1 = self.batch_norm_1(self.resconv_1(enc_output_2_global))
         resblock2 = self.resblock_1(resblock1)
-        resblock3 = self.resblock_2(resblock1)
+        resblock3 = self.resblock_2(resblock2)
         
         layer_up = self.deconv_up(resblock3) + self.deconv_short(layer_2)
         decoder_output = self.batch_norm_2(
