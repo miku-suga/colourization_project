@@ -47,7 +47,8 @@ def trainMCN(model, discrim, ref_data, target_data, noRef=False):
 def visualize_results(images):
     fig = plt.figure()
     for i, img in enumerate(images):
-        ax = fig.add_subplot(64, 64, i)
+        print(img.shape)
+        ax = fig.add_subplot(1, 1, i)
         ax.imshow(img, cmap="Greys")
     plt.show()
 
