@@ -42,7 +42,7 @@ def visualize_results(images):
     fig = plt.figure()
     for i, img in enumerate(images):
         ax = fig.add_subplot(i, 1, 1)
-        ax.imshow(images[i], cmap="Greys")
+        ax.imshow(img, cmap="Greys")
     plt.show()
 
 
