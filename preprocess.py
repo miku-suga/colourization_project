@@ -35,8 +35,8 @@ Returned as tensor data type
 def get_tf_dataset(batch_size, split, max_size=-1):
 
     dataset = tfds.load('places365_small', split=split, shuffle_files=True)
-    dataset = dataset.shuffle(DATA_BUFFER_SIZE) \
-        .filter(preprocess_filter).take(max_size) \
+    dataset = dataset.filter(preprocess_filter) \
+        .shuffle(DATA_BUFFER_SIZE).take(max_size) \
         .batch(batch_size).map(eager_preprocessing) \
         .prefetch(tf.data.experimental.AUTOTUNE)
 
