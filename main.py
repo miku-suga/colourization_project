@@ -12,13 +12,12 @@ def trainMCN(model, discrim, ref_data, target_data, noRef=False):
         r_l, r_ab, r_hist, _ = ref_batch
         t_l, t_ab, t_hist, t_label = target_batch
 
-        with tf.GradientTape(persistent=True) as tape:
+        with tf.GradientTape() as tape:
             g_tl, t_ab_out_1, t_ab_out_2, t_ab_out_3 = model(
                 r_hist, r_ab, r_l, t_l)
 
             output_img = tf.concat([t_l, t_ab_out_3], axis=-1)
             fake_logits = discrim(output_img)
-            real_logits = discrim(tf.concat([r_l, r_ab], axis=-1))
             t_h_out_1 = prep.get_histrogram(t_ab_out_1)
             t_h_out_2 = prep.get_histrogram(t_ab_out_2)
             t_h_out_3 = prep.get_histrogram(t_ab_out_3)
@@ -26,6 +25,11 @@ def trainMCN(model, discrim, ref_data, target_data, noRef=False):
             total_loss = model.loss_function(t_ab, t_ab_out_1, t_ab_out_2, t_ab_out_3,
                                              r_hist, t_h_out_1, t_h_out_2, t_h_out_3, fake_logits, g_tl, t_label, noRef)
 
+            
+
+        with tf.GradientTape() as tape_discrim:
+            fake_logits = discrim(tf.stop_gradient(output_img))
+            real_logits = discrim(tf.concat([r_l, r_ab], axis=-1))
             discrim_loss = discrim.loss_function(fake_logits, real_logits)
 
         tf.print('\tbatch', i, 'coloring loss =', total_loss)
@@ -37,7 +41,7 @@ def trainMCN(model, discrim, ref_data, target_data, noRef=False):
         model.optimizer.apply_gradients(
             zip(gradients, model.trainable_variables))
 
-        discrim_gradients = tape.gradient(
+        discrim_gradients = tape_discrim.gradient(
             discrim_loss, discrim.trainable_variables)
         discrim.optimizer.apply_gradients(
             zip(discrim_gradients, discrim.trainable_variables))
