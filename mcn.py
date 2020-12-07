@@ -94,6 +94,7 @@ class Encoder(tf.keras.Model):
         self.interpolate_6 = tf.keras.layers.UpSampling2D(
             size=4, interpolation='bilinear')
 
+    @tf.function
     def encode(self, img_l):
         layer_1 = self.batch_norm_1(self.conv_1_2(self.conv_1_1(img_l)))
         assert layer_1.shape[1:] == (self.height, self.width, 64)
@@ -140,7 +141,7 @@ class Encoder(tf.keras.Model):
         return feat_l, layer_1, layer_2, layer_3, layer_6
 
     """ returns feature of r, feature of t, feature of t to calculate G_tl, layer_2_1, layer_2_2, layer_2_3 for skip connections """
-
+    @tf.function
     def call(self, r_l, t_l, is_testing=False):
         # encoding the reference image
         feat_rl, _, _, _, _ = self.encode(r_l)
@@ -187,6 +188,7 @@ class Decoder1(tf.keras.Model):
         self.resblock_1 = ResBlock(512)
         self.resblock_2 = ResBlock(512)
 
+    @tf.function
     def call(self, M1, enc_output_1, layer_3, is_testing=False):
         enc_output_1_global = enc_output_1 + M1
         resblock1 = self.batch_norm_1(self.resconv_1(enc_output_1_global))
@@ -233,7 +235,8 @@ class Decoder2(tf.keras.Model):
 
         self.resblock_1 = ResBlock(256)
         self.resblock_2 = ResBlock(256)
-
+    
+    @tf.function
     def call(self, M2, decoder_output1, layer_2, is_testing=False):
         enc_output_2_global = decoder_output1 + M2
         resblock1 = self.batch_norm_1(self.resconv_1(enc_output_2_global))
@@ -280,6 +283,7 @@ class Decoder3(tf.keras.Model):
         self.resblock_2 = ResBlock(128)
         self.resblock_3 = ResBlock(128)
 
+    @tf.function
     def call(self, M3, decoder_output2, layer_1, is_testing=False):
         conv9_3_global = decoder_output2 + M3
         conv9_resblock1 = self.batch_norm_1(self.resconv_1(conv9_3_global))

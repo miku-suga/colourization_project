@@ -5,8 +5,11 @@ import numpy as np
 from PIL import Image
 import cv2
 
+import matplotlib.pyplot as plt
+import matplotlib.gridspec as gridspec
+
 DATA_BUFFER_SIZE = 256
-IMAGE_SIZE = 64
+IMAGE_SIZE = 128
 
 
 def preprocess_dataset(img, label):
@@ -36,22 +39,27 @@ def get_tf_dataset(batch_size, split, max_size=-1):
 
     return dataset
 
-
-def rgb2gray(img):
-    return np.dot(img[..., :3], [0.299, 0.587, 0.114])
-
-
-def process_img(images):
-    images = tf.image.resize(images, (IMAGE_SIZE, IMAGE_SIZE))
-    lab = color.rgb2lab(images).astype(np.float32)
+def rgb2lab_norm(images_rgb):
+    lab = color.rgb2lab(images_rgb).astype(np.float32)
     lab = tf.convert_to_tensor(lab)
-
     l_ts = lab[:, :, :, 0] / 50.0 - 1.0
     ab_ts = lab[:, :, :, 1:] / 110.0
-
     l_ts = tf.expand_dims(l_ts, axis=-1)
+
     return l_ts, ab_ts
 
+def lab2rgb_norm(images_l, images_ab):
+    l_ts = (images_l + 1.0) * 50.0
+    ab_ts = images_ab * 110.0
+
+    images_lab = tf.concat([l_ts, ab_ts], axis=-1)
+    return color.lab2rgb(images_lab).astype(np.float32)
+
+def process_img(images):
+    images = tf.image.resize(images, (IMAGE_SIZE, IMAGE_SIZE)) / 255.0
+    l_ts, ab_ts = rgb2lab_norm(images)
+    
+    return l_ts, ab_ts
 
 def get_histrogram(ab_batch):
     img_ab = tf.transpose(ab_batch, perm=[0, 3, 1, 2])
@@ -73,18 +81,42 @@ def get_histrogram(ab_batch):
 
     return hist
 
+def visualize_results(images_l, images_ab):
+    images = lab2rgb_norm(images_l, images_ab)
+    images = np.reshape(images, [images.shape[0], -1, 3])  # images reshape to (batch_size, D)
+    sqrtn = int(np.ceil(np.sqrt(images.shape[0])))
+    sqrtimg = int(np.ceil(np.sqrt(images.shape[1])))
 
-def get_target(dataset):
-    target_dataset = []
-    for i in dataset:
-        target_dataset.append(rgb2gray(i))
-    return target_dataset
+    fig = plt.figure(figsize=(sqrtn, sqrtn))
+    gs = gridspec.GridSpec(sqrtn, sqrtn)
+    gs.update(wspace=0.05, hspace=0.05)
 
+    for i, img in enumerate(images):
+        ax = plt.subplot(gs[i])
+        plt.axis('off')
+        ax.set_xticklabels([])
+        ax.set_yticklabels([])
+        ax.set_aspect('equal')
+        plt.imshow(img.reshape([sqrtimg, sqrtimg, 3]))
+    
+    plt.show()
 
 if __name__ == "__main__":
     batch_size = 5
     max_size = 10
 
+    # find min and max value in LAB color space
+    range1 = tf.broadcast_to(tf.reshape(tf.range(256), [1, 1, 256, 1]), [256, 256, 256, 1])
+    range2 = tf.broadcast_to(tf.reshape(tf.range(256), [1, 256, 1, 1]), [256, 256, 256, 1])
+    range3 = tf.broadcast_to(tf.reshape(tf.range(256), [256, 1, 1, 1]), [256, 256, 256, 1])
+
+    test_img = tf.cast(tf.concat([range1, range2, range3], axis=-1), tf.float32) / 255.0
+    print (test_img.shape)
+    test_l, test_ab = rgb2lab_norm(test_img)
+    print("L min", tf.reduce_min(test_l[:, :, :, 0]), "max", tf.reduce_max(test_l[:, :, :, 0]))
+    print("A min", tf.reduce_min(test_ab[:, :, :, 0]), "max", tf.reduce_max(test_ab[:, :, :, 0]))
+    print("B min", tf.reduce_min(test_ab[:, :, :, 1]), "max", tf.reduce_max(test_ab[:, :, :, 1]))
+ 
     # load data
     train_data = get_tf_dataset(batch_size, 'train', max_size)
     test_data = get_tf_dataset(batch_size, 'test', max_size)
@@ -92,11 +124,7 @@ if __name__ == "__main__":
     print("dataset loaded")
     for img in train_data.as_numpy_iterator():
         i_l, i_ab, i_hist, i_label = img
-        # shape
-        # i_l = (batch_size, IMAGE_SIZE, IMAGE_SIZE, 1)
-        # i_ab = (batch_size, IMAGE_SIZE, IMAGE_SIZE, 2)
-        # i_label = (batch_size)
-        print(i_l, i_ab, i_hist, i_label)
+        visualize_results(i_l, i_ab)
 
     # TODO: randomly pair them with ref
 

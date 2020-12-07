@@ -26,10 +26,11 @@ class GatedFusionModule(tf.keras.Model):
         self.C_conv_2 = tf.keras.layers.Conv1D(
             1, self.kernel_size, activation='sigmoid', padding='same')
 
+    @tf.function
     def call(self, corr, align_1, align_2, align_3, global_1, global_2, global_3, is_testing=False):
         conf = self.C_conv_1(corr)
         assert conf.shape[1:] == (self.height*self.width // 4, 1024)
-        conf = self.C_conv_2(corr)
+        conf = self.C_conv_2(conf)
         assert conf.shape[1:] == (self.height*self.width // 4, 1)
 
         conf_1 = tf.reshape(
@@ -103,6 +104,7 @@ class SemanticAssignmentModule(tf.keras.Model):
         self.gtl_dense_1 = tf.keras.layers.Dense(512, activation='relu')
         self.gtl_dense_2 = tf.keras.layers.Dense(num_classes)
 
+    @tf.function
     def call(self, feat_tl, feat_tr, r_ab, gtl_input, is_testing=False):
         """ takes in r, t, output of encoder, r_ab and spit out correlation matrix features conf_1,2,3, class output G, and f_s1,2,3 """
 
@@ -139,6 +141,7 @@ class SemanticAssignmentModule(tf.keras.Model):
 
         return (g_tl, C, align_1, align_2, align_3)
 
+    @tf.function
     def correlate(self, t_lum, r_lum):
         t_flatten = tf.reshape(t_lum, [t_lum.shape[0], -1, t_lum.shape[-1]])
         r_flatten = tf.reshape(r_lum, [r_lum.shape[0], -1, r_lum.shape[-1]])
@@ -153,6 +156,7 @@ class SemanticAssignmentModule(tf.keras.Model):
 
         return corr
 
+    @tf.function
     def attention(self, C, f_rab):
         corr = tf.nn.softmax(C/0.01, axis=1)
         rab_flatten = tf.reshape(f_rab, [f_rab.shape[0], -1, f_rab.shape[-1]])
@@ -192,7 +196,8 @@ class ColorDistributionModule(tf.keras.Model):
             256, self.kernel_size, activation='relu', padding='same')
         self.conv_2_3 = tf.keras.layers.Conv2D(
             128, self.kernel_size, activation='relu', padding='same')
-
+            
+    @tf.function
     def call(self, r_hist, is_testing=False):
         r_hist = tf.reshape(r_hist, [r_hist.shape[0], 1, 1, 441])
         conv_output = self.conv_1_1(r_hist)
