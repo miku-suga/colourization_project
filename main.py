@@ -48,9 +48,8 @@ def trainMCN(model, discrim, ref_data, target_data, noRef=False):
 
 
 def main():
-    num_classes = 365
-    batch_size = 5
-    training_size = 100
+    batch_size = 6
+    training_size = 200
     testing_size = 10
 
     # debugging config
@@ -64,7 +63,7 @@ def main():
     test_ref_data = prep.get_tf_dataset(
         batch_size, 'test', testing_size).take(1)
 
-    model = Model(num_classes, prep.IMAGE_SIZE, prep.IMAGE_SIZE)
+    model = Model(prep.NUM_CLASSES, prep.IMAGE_SIZE, prep.IMAGE_SIZE)
     discrim = Discriminator()
 
     # We are going to use target label as the train reference.
