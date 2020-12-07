@@ -55,6 +55,7 @@ def trainMCN(model, discrim, ref_data, target_data, cp_prefix, noRef=False):
         if i % 1000 == 1:
             model.save_weights(cp_prefix + '_model')
             discrim.save_weights(cp_prefix + '_discrim')
+            np.save(cp_prefix + '_loss', loss_list)
 
     return loss_list
 def main():
@@ -81,12 +82,14 @@ def main():
     # train MCN without histogram loss
     loss_1 = trainMCN(model, discrim, train_target_data, train_target_data, prefix_cp + '1', noRef=True)
     np.save(prefix + 'loss_1', loss_1)
-    model.save_weights(prefix + 'weights_checkpoint_1')
+    model.save_weights(prefix + 'weights_model_1')
+    discrim.save_weights(prefix + 'weights_discrim_1')
 
     # train everything
     loss_2 = trainMCN(model, discrim, train_ref_data, train_target_data, prefix_cp + '2')
     np.save(prefix + 'loss_2', loss_2)
-    model.save_weights(prefix + 'weights_checkpoint_2')
+    model.save_weights(prefix + 'weights_model_2')
+    discrim.save_weights(prefix + 'weights_discrim_2')
 
     # call model on first 10 test examples
     print("Training done, visualize result..")
