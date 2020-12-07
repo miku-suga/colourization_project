@@ -15,10 +15,10 @@ class ResBlock(tf.keras.Model):
 
         """ Init layers """
         self.conv_1 = tf.keras.layers.Conv2D(
-            dim, 3, activation='relu', padding='same')
+            dim, 3, activation='swish', padding='same')
         self.batch_norm_1 = tf.keras.layers.BatchNormalization(renorm=True)
         self.conv_2 = tf.keras.layers.Conv2D(
-            dim, 3, activation='relu', padding='same')
+            dim, 3, activation='swish', padding='same')
         self.batch_norm_2 = tf.keras.layers.BatchNormalization(renorm=True)
 
     def call(self, input):
@@ -42,47 +42,47 @@ class Encoder(tf.keras.Model):
 
         """ Init layers """
         self.conv_1_1 = tf.keras.layers.Conv2D(
-            64, 3, activation='relu', padding='same')
+            64, 3, activation='swish', padding='same')
         self.conv_1_2 = tf.keras.layers.Conv2D(
-            64, 3, activation='relu', padding='same')
+            64, 3, activation='swish', padding='same')
         self.batch_norm_1 = tf.keras.layers.BatchNormalization(renorm=True)
 
         self.conv_2_1 = tf.keras.layers.Conv2D(
-            128, 3, activation='relu', padding='same')
+            128, 3, activation='swish', padding='same')
         self.conv_2_2 = tf.keras.layers.Conv2D(
-            128, 3, activation='relu', padding='same')
+            128, 3, activation='swish', padding='same')
         self.batch_norm_2 = tf.keras.layers.BatchNormalization(renorm=True)
 
         self.conv_3_1 = tf.keras.layers.Conv2D(
-            256, 3, activation='relu', padding='same')
+            256, 3, activation='swish', padding='same')
         self.conv_3_2 = tf.keras.layers.Conv2D(
-            256, 3, activation='relu', padding='same')
+            256, 3, activation='swish', padding='same')
         self.conv_3_3 = tf.keras.layers.Conv2D(
-            256, 3, activation='relu', padding='same')
+            256, 3, activation='swish', padding='same')
         self.batch_norm_3 = tf.keras.layers.BatchNormalization(renorm=True)
 
         self.conv_4_1 = tf.keras.layers.Conv2D(
-            512, 3, activation='relu', padding='same')
+            512, 3, activation='swish', padding='same')
         self.conv_4_2 = tf.keras.layers.Conv2D(
-            512, 3, activation='relu', padding='same')
+            512, 3, activation='swish', padding='same')
         self.conv_4_3 = tf.keras.layers.Conv2D(
-            512, 3, activation='relu', padding='same')
+            512, 3, activation='swish', padding='same')
         self.batch_norm_4 = tf.keras.layers.BatchNormalization(renorm=True)
 
         self.conv_5_1 = tf.keras.layers.Conv2D(
-            512, 3, dilation_rate=2, activation='relu', padding='same')
+            512, 3, dilation_rate=2, activation='swish', padding='same')
         self.conv_5_2 = tf.keras.layers.Conv2D(
-            512, 3, dilation_rate=2, activation='relu', padding='same')
+            512, 3, dilation_rate=2, activation='swish', padding='same')
         self.conv_5_3 = tf.keras.layers.Conv2D(
-            512, 3, dilation_rate=2, activation='relu', padding='same')
+            512, 3, dilation_rate=2, activation='swish', padding='same')
         self.batch_norm_5 = tf.keras.layers.BatchNormalization(renorm=True)
 
         self.conv_6_1 = tf.keras.layers.Conv2D(
-            512, 3, dilation_rate=2, activation='relu', padding='same')
+            512, 3, dilation_rate=2, activation='swish', padding='same')
         self.conv_6_2 = tf.keras.layers.Conv2D(
-            512, 3, dilation_rate=2, activation='relu', padding='same')
+            512, 3, dilation_rate=2, activation='swish', padding='same')
         self.conv_6_3 = tf.keras.layers.Conv2D(
-            512, 3, dilation_rate=2, activation='relu', padding='same')
+            512, 3, dilation_rate=2, activation='swish', padding='same')
         self.batch_norm_6 = tf.keras.layers.BatchNormalization(renorm=True)
 
         self.interpolate_3 = tf.keras.layers.UpSampling2D(
@@ -168,16 +168,16 @@ class Decoder1(tf.keras.Model):
 
         """ Init layers """
         self.resconv_1 = tf.keras.layers.Conv2D(
-            512, 3, activation='relu', padding='same')
+            512, 3, activation='swish', padding='same')
         self.batch_norm_1 = tf.keras.layers.BatchNormalization(renorm=True)
         self.deconv_up = tf.keras.layers.Conv2DTranspose(
             256, 4, strides=2, padding='same')
         self.deconv_short = tf.keras.layers.Conv2D(
-            256, 3, padding='same', activation='relu')
+            256, 3, padding='same', activation='swish')
         self.deconv_1 = tf.keras.layers.Conv2D(
-            256, 3, padding='same', activation='relu')
+            256, 3, padding='same', activation='swish')
         self.deconv_2 = tf.keras.layers.Conv2D(
-            256, 3, padding='same', activation='relu')
+            256, 3, padding='same', activation='swish')
         self.batch_norm_2 = tf.keras.layers.BatchNormalization(renorm=True)
 
         self.model_out = tf.keras.layers.Conv2D(
@@ -218,14 +218,14 @@ class Decoder2(tf.keras.Model):
 
         """ Init layers """
         self.resconv_1 = tf.keras.layers.Conv2D(
-            256, 3, activation='relu', padding='same')
+            256, 3, activation='swish', padding='same')
         self.batch_norm_1 = tf.keras.layers.BatchNormalization(renorm=True)
         self.deconv_up = tf.keras.layers.Conv2DTranspose(
             128, 4, strides=2, padding='same')
         self.deconv_short = tf.keras.layers.Conv2D(128, 3, padding='same')
-        self.relu_1 = tf.keras.layers.ReLU()
+        self.relu_1 = tf.keras.layers.LeakyReLU()
         self.deconv = tf.keras.layers.Conv2D(128, 3, padding='same')
-        self.relu_2 = tf.keras.layers.ReLU()
+        self.relu_2 = tf.keras.layers.LeakyReLU()
         self.batch_norm_2 = tf.keras.layers.BatchNormalization(renorm=True)
 
         self.model_out = tf.keras.layers.Conv2D(
@@ -266,12 +266,12 @@ class Decoder3(tf.keras.Model):
 
         """ Init layers """
         self.resconv_1 = tf.keras.layers.Conv2D(
-            128, 3, activation='relu', padding='same')
+            128, 3, activation='swish', padding='same')
         self.batch_norm_1 = tf.keras.layers.BatchNormalization(renorm=True)
         self.deconv_up = tf.keras.layers.Conv2DTranspose(
             128, 4, strides=2, padding='same')
         self.deconv_short = tf.keras.layers.Conv2D(128, 3, padding='same')
-        self.relu = tf.keras.layers.ReLU()
+        self.relu = tf.keras.layers.LeakyReLU()
         self.deconv = tf.keras.layers.Conv2D(128, 3, padding='same')
         self.leaky_relu = tf.keras.layers.LeakyReLU()
 

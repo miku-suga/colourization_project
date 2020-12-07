@@ -92,7 +92,7 @@ def main():
     discrim.save_weights(prefix + 'weights_discrim_2')
 
     # call model on first 10 test examples
-    print("Training done, visualize result..")
+    tf.print("Training done, visualize result..")
     for ref_batch, target_batch in zip(test_ref_data.as_numpy_iterator(), test_target_data.as_numpy_iterator()):
         r_l, r_ab, r_hist, _ = ref_batch
         t_l, _, _, _ = target_batch

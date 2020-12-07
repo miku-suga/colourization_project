@@ -73,29 +73,29 @@ class SemanticAssignmentModule(tf.keras.Model):
         self.batch_norm_3 = tf.keras.layers.BatchNormalization(renorm=True)
 
         self.rab_conv_1_1 = tf.keras.layers.Conv2D(
-            64, self.kernel_size, activation='relu', padding='same')
+            64, self.kernel_size, activation='swish', padding='same')
         self.rab_conv_1_2 = tf.keras.layers.Conv2D(
-            64, self.kernel_size, activation='relu', padding='same')
+            64, self.kernel_size, activation='swish', padding='same')
         self.rab_conv_2_1 = tf.keras.layers.Conv2D(
-            128, self.kernel_size, activation='relu', padding='same')
+            128, self.kernel_size, activation='swish', padding='same')
         self.rab_conv_2_2 = tf.keras.layers.Conv2D(
-            128, self.kernel_size, activation='relu', padding='same')
+            128, self.kernel_size, activation='swish', padding='same')
 
         self.fa_conv_3_1 = tf.keras.layers.Conv2D(
-            256, self.kernel_size, activation='relu', padding='same')
+            256, self.kernel_size, activation='swish', padding='same')
         self.fa_conv_3_2 = tf.keras.layers.Conv2D(
-            256, self.kernel_size, activation='relu', padding='same')
+            256, self.kernel_size, activation='swish', padding='same')
 
         self.fa_conv_4_1 = tf.keras.layers.Conv2D(
-            512, self.kernel_size, activation='relu', padding='same')
+            512, self.kernel_size, activation='swish', padding='same')
         self.fa_conv_4_2 = tf.keras.layers.Conv2D(
-            512, self.kernel_size, activation='relu', padding='same')
+            512, self.kernel_size, activation='swish', padding='same')
 
-        self.gtl_dense_1 = tf.keras.layers.Dense(512, activation='relu')
+        self.gtl_dense_1 = tf.keras.layers.Dense(512, activation='swish')
         self.gtl_dense_2 = tf.keras.layers.Dense(num_classes)
 
         self.C_conv_1 = tf.keras.layers.Conv1D(
-            1024, kernel_size=1, activation='relu', padding='valid')
+            1024, kernel_size=1, activation='swish', padding='valid')
         self.C_conv_2 = tf.keras.layers.Conv1D(
             1, kernel_size=1, activation='sigmoid', padding='valid')
 
@@ -183,18 +183,18 @@ class ColorDistributionModule(tf.keras.Model):
 
         """ Init layers """
         self.conv_1_1 = tf.keras.layers.Conv2D(
-            512, self.kernel_size, activation='relu', padding='same')
+            512, self.kernel_size, activation='swish', padding='same')
         self.conv_1_2 = tf.keras.layers.Conv2D(
-            512, self.kernel_size, activation='relu', padding='same')
+            512, self.kernel_size, activation='swish', padding='same')
         self.conv_1_3 = tf.keras.layers.Conv2D(
-            512, self.kernel_size, activation='relu', padding='same')
+            512, self.kernel_size, activation='swish', padding='same')
 
         self.conv_2_1 = tf.keras.layers.Conv2D(
-            512, self.kernel_size, activation='relu', padding='same')
+            512, self.kernel_size, activation='swish', padding='same')
         self.conv_2_2 = tf.keras.layers.Conv2D(
-            256, self.kernel_size, activation='relu', padding='same')
+            256, self.kernel_size, activation='swish', padding='same')
         self.conv_2_3 = tf.keras.layers.Conv2D(
-            128, self.kernel_size, activation='relu', padding='same')
+            128, self.kernel_size, activation='swish', padding='same')
 
     @tf.function    
     def call(self, r_hist, is_testing=False):

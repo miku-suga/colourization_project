@@ -60,7 +60,6 @@ class Model(tf.keras.Model):
         loss_pixel_1 = self.pixel_weight * (tf.keras.losses.Huber())(tf.nn.max_pool(t_ab_real, 4, 4, 'SAME'), t_ab_out_1)
         loss_pixel_2 = self.pixel_weight * (tf.keras.losses.Huber())(tf.nn.max_pool(t_ab_real, 2, 2, 'SAME'), t_ab_out_2)
         loss_pixel_3 = self.pixel_weight * (tf.keras.losses.Huber())(t_ab_real, t_ab_out_3) 
-        """ loss_pixel = self.pixel_weight * (tf.keras.losses.Huber())(tf.nn.max_pool(t_ab_real), t_ab_out_3) """
 
         # Histogram Loss Function
         loss_hist_1 = self.hist_weight * 2 * \
@@ -96,8 +95,6 @@ class Model(tf.keras.Model):
             loss += ((loss_pixel_3 + loss_tv_3 + loss_hist_3) / self.batch_size_2) + loss_g 
             loss += loss_class
 
-        # tf.print('loss', loss)
-
         return loss
 
 
@@ -110,21 +107,21 @@ class Discriminator(tf.keras.Model):
         self.kernel_size = 3
 
         self.conv_1_1 = tf.keras.layers.Conv2D(
-            32, self.kernel_size, activation='relu', padding='same')
+            32, self.kernel_size, activation='swish', padding='same')
         self.conv_1_2 = tf.keras.layers.Conv2D(
-            32, self.kernel_size, activation='relu', padding='same')
+            32, self.kernel_size, activation='swish', padding='same')
         self.conv_2_1 = tf.keras.layers.Conv2D(
-            64, self.kernel_size, activation='relu', padding='same')
+            64, self.kernel_size, activation='swish', padding='same')
         self.conv_2_2 = tf.keras.layers.Conv2D(
-            64, self.kernel_size, activation='relu', padding='same')
+            64, self.kernel_size, activation='swish', padding='same')
         self.conv_3_1 = tf.keras.layers.Conv2D(
-            128, self.kernel_size, activation='relu', padding='same')
+            128, self.kernel_size, activation='swish', padding='same')
         self.conv_3_2 = tf.keras.layers.Conv2D(
-            128, self.kernel_size, activation='relu', padding='same')
+            128, self.kernel_size, activation='swish', padding='same')
         self.conv_4_1 = tf.keras.layers.Conv2D(
-            256, self.kernel_size, activation='relu', padding='same')
+            256, self.kernel_size, activation='swish', padding='same')
         self.conv_4_2 = tf.keras.layers.Conv2D(
-            256, self.kernel_size, activation='relu', padding='same')
+            256, self.kernel_size, activation='swish', padding='same')
 
         self.dense_1 = tf.keras.layers.Dense(512)
         self.dense_1_relu = tf.keras.layers.LeakyReLU(alpha=0.2)
