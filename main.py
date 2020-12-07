@@ -52,7 +52,7 @@ def trainMCN(model, discrim, ref_data, target_data, cp_prefix, noRef=False):
         discrim.optimizer.apply_gradients(
             zip(discrim_gradients, discrim.trainable_variables))
 
-        if i % 1000 == 0:
+        if i % 1000 == 1:
             model.save_weights(cp_prefix + '_model')
             discrim.save_weights(cp_prefix + '_discrim')
 
