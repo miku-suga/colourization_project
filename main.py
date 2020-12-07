@@ -8,10 +8,11 @@ from model import Model, Discriminator
 
 def trainMCN(model, discrim, ref_data, target_data, noRef=False):
     i = 0
+    loss_list = []
     for ref_batch, target_batch in zip(ref_data.as_numpy_iterator(), target_data.as_numpy_iterator()):
-        r_l, r_ab, r_hist, _ = ref_batch
-        t_l, t_ab, t_hist, t_label = target_batch
-
+        r_l, r_ab, r_hist, r_label = ref_batch
+        t_l, t_ab, _, t_label = target_batch
+        tf.print('label1', r_label, t_label)
         with tf.GradientTape() as tape:
             g_tl, t_ab_out_1, t_ab_out_2, t_ab_out_3 = model(
                 r_hist, r_ab, r_l, t_l)
@@ -32,9 +33,14 @@ def trainMCN(model, discrim, ref_data, target_data, noRef=False):
             real_logits = discrim(tf.concat([r_l, r_ab], axis=-1))
             discrim_loss = discrim.loss_function(fake_logits, real_logits)
 
+        discrim_fake_out = tf.reduce_mean(tf.sigmoid(fake_logits))
         tf.print('\tbatch', i, 'coloring loss =', total_loss)
         tf.print('\tbatch', i, 'discriminator loss =', discrim_loss)
+        tf.print('\tbatch', i, 'discriminator output =', discrim_fake_out)
         tf.print()
+
+        loss_list.append( (total_loss, discrim_loss, discrim_fake_out) )
+
         i += 1
 
         gradients = tape.gradient(total_loss, model.trainable_variables)
@@ -45,13 +51,14 @@ def trainMCN(model, discrim, ref_data, target_data, noRef=False):
             discrim_loss, discrim.trainable_variables)
         discrim.optimizer.apply_gradients(
             zip(discrim_gradients, discrim.trainable_variables))
+            
 
-
+    return loss_list
 def main():
     batch_size = 6
     training_size = 200
-    testing_size = 10
-
+    testing_size = 100
+    prefix = 'saved/'
     # debugging config
     # tf.config.run_functions_eagerly(True)
     # tf.debugging.enable_check_numerics()
@@ -68,10 +75,14 @@ def main():
 
     # We are going to use target label as the train reference.
     # train MCN without histogram loss
-    trainMCN(model, discrim, train_target_data, train_target_data, noRef=True)
+    loss_1 = trainMCN(model, discrim, train_target_data, train_target_data, noRef=True)
+    np.save(prefix + 'loss_1', loss_1)
+    model.save_weights(prefix + 'weights_checkpoint_1')
 
     # train everything
-    trainMCN(model, discrim, train_ref_data, train_target_data)
+    loss_2 = trainMCN(model, discrim, train_ref_data, train_target_data)
+    np.save(prefix + 'loss_2', loss_2)
+    model.save_weights(prefix + 'weights_checkpoint_2')
 
     # call model on first 10 test examples
     print("Training done, visualize result..")
@@ -83,8 +94,6 @@ def main():
         # visualize
         prep.visualize_results(t_l, fake_img_3)
         break
-
-    # TODO: load and save the weight for GCP
 
 
 if __name__ == '__main__':
