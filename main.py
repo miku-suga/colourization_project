@@ -6,7 +6,7 @@ import preprocess as prep
 from model import Model, Discriminator
 
 
-def trainMCN(model, discrim, ref_data, target_data, noRef=False):
+def trainMCN(model, discrim, ref_data, target_data, cp_prefix, noRef=False):
     i = 0
     loss_list = []
     for ref_batch, target_batch in zip(ref_data.as_numpy_iterator(), target_data.as_numpy_iterator()):
@@ -51,7 +51,10 @@ def trainMCN(model, discrim, ref_data, target_data, noRef=False):
             discrim_loss, discrim.trainable_variables)
         discrim.optimizer.apply_gradients(
             zip(discrim_gradients, discrim.trainable_variables))
-            
+
+        if i % 1000 == 0:
+            model.save_weights(cp_prefix + '_model')
+            discrim.save_weights(cp_prefix + '_discrim')
 
     return loss_list
 def main():
@@ -59,6 +62,7 @@ def main():
     training_size = -1
     testing_size = 100
     prefix = 'saved/'
+    prefix_cp = 'checkpoints/'
     # debugging config
     # tf.config.run_functions_eagerly(True)
     # tf.debugging.enable_check_numerics()
@@ -75,12 +79,12 @@ def main():
 
     # We are going to use target label as the train reference.
     # train MCN without histogram loss
-    loss_1 = trainMCN(model, discrim, train_target_data, train_target_data, noRef=True)
+    loss_1 = trainMCN(model, discrim, train_target_data, train_target_data, prefix_cp + '1', noRef=True)
     np.save(prefix + 'loss_1', loss_1)
     model.save_weights(prefix + 'weights_checkpoint_1')
 
     # train everything
-    loss_2 = trainMCN(model, discrim, train_ref_data, train_target_data)
+    loss_2 = trainMCN(model, discrim, train_ref_data, train_target_data, prefix_cp + '2')
     np.save(prefix + 'loss_2', loss_2)
     model.save_weights(prefix + 'weights_checkpoint_2')
 
