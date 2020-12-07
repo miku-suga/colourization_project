@@ -21,20 +21,10 @@ class GatedFusionModule(tf.keras.Model):
         self.height = img_height
         self.width = img_width
 
-        self.C_conv_1 = tf.keras.layers.Conv1D(
-            1024, self.kernel_size, activation='relu', padding='same')
-        self.C_conv_2 = tf.keras.layers.Conv1D(
-            1, self.kernel_size, activation='sigmoid', padding='same')
-
     @tf.function
-    def call(self, corr, align_1, align_2, align_3, global_1, global_2, global_3, is_testing=False):
-        conf = self.C_conv_1(corr)
-        assert conf.shape[1:] == (self.height*self.width // 4, 1024)
-        conf = self.C_conv_2(conf)
-        assert conf.shape[1:] == (self.height*self.width // 4, 1)
-
+    def call(self, conf, align_1, align_2, align_3, global_1, global_2, global_3, is_testing=False):
         conf_1 = tf.reshape(
-            conf, [corr.shape[0], self.height // 2, self.width // 2, 1])
+            conf, [conf.shape[0], self.height // 2, self.width // 2, 1])
         conf_2 = conf_1[:, ::2, ::2, :]
         conf_3 = conf_2[:, ::2, ::2, :]
 
@@ -78,9 +68,9 @@ class SemanticAssignmentModule(tf.keras.Model):
         self.height = img_height
         self.width = img_width
 
-        self.batch_norm_1 = tf.keras.layers.BatchNormalization()
-        self.batch_norm_2 = tf.keras.layers.BatchNormalization()
-        self.batch_norm_3 = tf.keras.layers.BatchNormalization()
+        self.batch_norm_1 = tf.keras.layers.BatchNormalization(renorm=True)
+        self.batch_norm_2 = tf.keras.layers.BatchNormalization(renorm=True)
+        self.batch_norm_3 = tf.keras.layers.BatchNormalization(renorm=True)
 
         self.rab_conv_1_1 = tf.keras.layers.Conv2D(
             64, self.kernel_size, activation='relu', padding='same')
@@ -104,6 +94,11 @@ class SemanticAssignmentModule(tf.keras.Model):
         self.gtl_dense_1 = tf.keras.layers.Dense(512, activation='relu')
         self.gtl_dense_2 = tf.keras.layers.Dense(num_classes)
 
+        self.C_conv_1 = tf.keras.layers.Conv1D(
+            1024, self.kernel_size, activation='relu', padding='same')
+        self.C_conv_2 = tf.keras.layers.Conv1D(
+            1, self.kernel_size, activation='sigmoid', padding='same')
+
     @tf.function
     def call(self, feat_tl, feat_tr, r_ab, gtl_input, is_testing=False):
         """ takes in r, t, output of encoder, r_ab and spit out correlation matrix features conf_1,2,3, class output G, and f_s1,2,3 """
@@ -111,13 +106,17 @@ class SemanticAssignmentModule(tf.keras.Model):
         assert feat_tl.shape[1:] == (self.height // 2, self.width // 2, 1984)
         assert feat_tr.shape[1:] == (self.height // 2, self.width // 2, 1984)
 
-        C = self.correlate(feat_tl, feat_tr)
-
         f_rab = self.rab_conv_1_2(self.rab_conv_1_1(r_ab))
         assert f_rab.shape[1:] == (self.height, self.width, 64)
         f_rab = self.batch_norm_1(self.rab_conv_2_2(
             self.rab_conv_2_1(f_rab[:, ::2, ::2, :])))
         assert f_rab.shape[1:] == (self.height // 2, self.width // 2, 128)
+
+        C = self.correlate(feat_tl, feat_tr)
+        conf = self.C_conv_1(C)
+        assert conf.shape[1:] == (self.height*self.width // 4, 1024)
+        conf = self.C_conv_2(conf)
+        assert conf.shape[1:] == (self.height*self.width // 4, 1)
 
         f_a = self.attention(C, f_rab)
         f_a = tf.reshape(
@@ -139,7 +138,7 @@ class SemanticAssignmentModule(tf.keras.Model):
         assert g_tl.shape[1:] == (512)
         g_tl = self.gtl_dense_2(g_tl)
 
-        return (g_tl, C, align_1, align_2, align_3)
+        return (g_tl, conf, align_1, align_2, align_3)
 
     @tf.function
     def correlate(self, t_lum, r_lum):
@@ -196,8 +195,8 @@ class ColorDistributionModule(tf.keras.Model):
             256, self.kernel_size, activation='relu', padding='same')
         self.conv_2_3 = tf.keras.layers.Conv2D(
             128, self.kernel_size, activation='relu', padding='same')
-            
-    @tf.function
+
+    @tf.function    
     def call(self, r_hist, is_testing=False):
         r_hist = tf.reshape(r_hist, [r_hist.shape[0], 1, 1, 441])
         conv_output = self.conv_1_1(r_hist)

@@ -31,18 +31,17 @@ class Model(tf.keras.Model):
 
         self.optimizer = tf.keras.optimizers.Adam(learning_rate=0.0002)
 
-    @tf.function
     def call(self, r_hist, r_ab, r_l, t_l, is_testing=False):
         """ get features and output of convolution layers from encoder """
         feat_rl, feat_tl, enc_output, layer_1, layer_2, layer_3 = self.encoder(
             r_l, t_l)
 
         f_global1, f_global2, f_global3 = self.cdm(r_hist)
-        g_tl, corr, align_1, align_2, align_3 = self.sam(
+        g_tl, conf, align_1, align_2, align_3 = self.sam(
             feat_tl, feat_rl, r_ab, enc_output)
 
         gate_out1, gate_out2, gate_out3 = self.gfm(
-            corr, align_1, align_2, align_3, f_global1, f_global2, f_global3)
+            conf, align_1, align_2, align_3, f_global1, f_global2, f_global3)
 
         decoder_output1, fake_img_1 = self.decoder_1(
             gate_out1, enc_output, layer_3)
@@ -53,7 +52,6 @@ class Model(tf.keras.Model):
 
         return g_tl, fake_img_1, fake_img_2, fake_img_3
 
-    @tf.function
     def loss_function(self, t_ab_real, t_ab_out_1, t_ab_out_2, t_ab_out_3, r_h, t_h_out_1, t_h_out_2, t_h_out_3, discrim_logits, g_tl_out, g_tl_real, is_first_round):
         # Classification Loss Function
         loss_class = self.class_weight * tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(g_tl_real, g_tl_out))

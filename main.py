@@ -50,8 +50,8 @@ def main():
     testing_size = 10
 
     # debugging config
-    tf.config.run_functions_eagerly(True)
-    tf.debugging.enable_check_numerics()
+    # tf.config.run_functions_eagerly(True)
+    # tf.debugging.enable_check_numerics()
 
     train_target_data = prep.get_tf_dataset(batch_size, 'train', training_size)
     train_ref_data = prep.get_tf_dataset(batch_size, 'train', training_size)
