@@ -12,7 +12,7 @@ def trainMCN(model, discrim, ref_data, target_data, noRef=False):
     for ref_batch, target_batch in zip(ref_data.as_numpy_iterator(), target_data.as_numpy_iterator()):
         r_l, r_ab, r_hist, r_label = ref_batch
         t_l, t_ab, _, t_label = target_batch
-        tf.print('label1', r_label, t_label)
+
         with tf.GradientTape() as tape:
             g_tl, t_ab_out_1, t_ab_out_2, t_ab_out_3 = model(
                 r_hist, r_ab, r_l, t_l)
@@ -55,8 +55,8 @@ def trainMCN(model, discrim, ref_data, target_data, noRef=False):
 
     return loss_list
 def main():
-    batch_size = 6
-    training_size = 200
+    batch_size = 10
+    training_size = -1
     testing_size = 100
     prefix = 'saved/'
     # debugging config
