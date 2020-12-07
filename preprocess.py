@@ -16,11 +16,11 @@ def preprocess_dataset(img, label):
     l_ts, ab_ts = process_img(img.numpy())
     hist = get_histrogram(ab_ts)
 
-    return (l_ts, ab_ts, hist, label)
+    return (l_ts, ab_ts, hist, tf.cast(label, tf.int32))
 
 
 def eager_preprocessing(data):
-    return tf.py_function(preprocess_dataset, [data['image'], data['label']], (tf.float32, tf.float32, tf.float32, tf.int64))
+    return tf.py_function(preprocess_dataset, [data['image'], data['label']], (tf.float32, tf.float32, tf.float32, tf.int32))
 
 
 '''

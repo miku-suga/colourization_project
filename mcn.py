@@ -94,7 +94,6 @@ class Encoder(tf.keras.Model):
         self.interpolate_6 = tf.keras.layers.UpSampling2D(
             size=4, interpolation='bilinear')
 
-    @tf.function
     def encode(self, img_l):
         layer_1 = self.batch_norm_1(self.conv_1_2(self.conv_1_1(img_l)))
         assert layer_1.shape[1:] == (self.height, self.width, 64)
@@ -141,7 +140,6 @@ class Encoder(tf.keras.Model):
         return feat_l, layer_1, layer_2, layer_3, layer_6
 
     """ returns feature of r, feature of t, feature of t to calculate G_tl, layer_2_1, layer_2_2, layer_2_3 for skip connections """
-    @tf.function
     def call(self, r_l, t_l, is_testing=False):
         # encoding the reference image
         feat_rl, _, _, _, _ = self.encode(r_l)

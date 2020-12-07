@@ -20,14 +20,14 @@ class Model(tf.keras.Model):
         self.sam = SemanticAssignmentModule(num_classes, img_height, img_width)
         self.gfm = GatedFusionModule(img_height, img_width)
 
-        self.batch_size_1 = 48
-        self.batch_size_2 = 12
+        self.batch_size_1 = tf.constant(48.0)
+        self.batch_size_2 = tf.constant(12.0)
 
-        self.pixel_weight = 1000
-        self.hist_weight = 1
-        self.class_weight = 1
-        self.g_weight = 0.1
-        self.tv_weight = 10
+        self.pixel_weight = tf.constant(1000.0)
+        self.hist_weight = tf.constant(1.0)
+        self.class_weight = tf.constant(1.0)
+        self.g_weight = tf.constant(0.1)
+        self.tv_weight = tf.constant(10.0)
 
         self.optimizer = tf.keras.optimizers.Adam(learning_rate=0.0002)
 
@@ -56,7 +56,7 @@ class Model(tf.keras.Model):
     @tf.function
     def loss_function(self, t_ab_real, t_ab_out_1, t_ab_out_2, t_ab_out_3, r_h, t_h_out_1, t_h_out_2, t_h_out_3, discrim_logits, g_tl_out, g_tl_real, is_first_round):
         # Classification Loss Function
-        loss_class = self.class_weight * tf.nn.sparse_softmax_cross_entropy_with_logits(g_tl_real, g_tl_out)
+        loss_class = self.class_weight * tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(g_tl_real, g_tl_out))
 
         # Smooth L1 Loss Function
         loss_pixel_1 = self.pixel_weight * (tf.keras.losses.Huber())(tf.nn.max_pool(t_ab_real, 4, 4, 'SAME'), t_ab_out_1)
@@ -66,30 +66,30 @@ class Model(tf.keras.Model):
 
         # Histogram Loss Function
         loss_hist_1 = self.hist_weight * 2 * \
-            tf.reduce_sum(tf.divide(tf.square(t_h_out_1 - r_h), (t_h_out_1 + r_h + 0.1)))
+            tf.reduce_sum(tf.math.divide_no_nan(tf.square(t_h_out_1 - r_h), (t_h_out_1 + r_h)))
         loss_hist_2 = self.hist_weight * 2 * \
-            tf.reduce_sum(tf.divide(tf.square(t_h_out_2 - r_h), (t_h_out_2 + r_h + 0.1)))
+            tf.reduce_sum(tf.math.divide_no_nan(tf.square(t_h_out_2 - r_h), (t_h_out_2 + r_h)))
         loss_hist_3 = self.hist_weight * 2 * \
-            tf.reduce_sum(tf.divide(tf.square(t_h_out_3 - r_h), (t_h_out_3 + r_h + 0.1))) 
+            tf.reduce_sum(tf.math.divide_no_nan(tf.square(t_h_out_3 - r_h), (t_h_out_3 + r_h))) 
 
         # TV REGULARIZATION Loss Function
-        loss_tv_1 = self.tv_weight * tf.image.total_variation(t_ab_out_1)
-        loss_tv_2 = self.tv_weight * tf.image.total_variation(t_ab_out_2)
-        loss_tv_3 = self.tv_weight * tf.image.total_variation(t_ab_out_3)
+        loss_tv_1 = self.tv_weight * tf.reduce_mean(tf.image.total_variation(t_ab_out_1))
+        loss_tv_2 = self.tv_weight * tf.reduce_mean(tf.image.total_variation(t_ab_out_2))
+        loss_tv_3 = self.tv_weight * tf.reduce_mean(tf.image.total_variation(t_ab_out_3))
 
         # generator loss
         loss_g = self.g_weight * tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(
             labels=tf.ones_like(discrim_logits), logits=discrim_logits))
 
-        """ print('loss_class', loss_class)
-        print('loss_pixel', loss_pixel.numpy())
-        print('loss_hist', loss_hist)
-        print('loss_tv', loss_tv)
-        print('loss_g', loss_g) """
+        # tf.print('loss_class', loss_class)
+        # tf.print('loss_pixel', loss_pixel_3)
+        # tf.print('loss_hist', loss_hist_3)
+        # tf.print('loss_tv', loss_tv_3)
+        # tf.print('loss_g', loss_g)
 
         if is_first_round:
             loss = ((loss_pixel_1 + loss_tv_1) / self.batch_size_1) + loss_g 
-            loss += ((loss_pixel_2 + loss_tv_2) / self.batch_size_1) + loss_g 
+            loss += ((loss_pixel_2 + loss_tv_2) / self.batch_size_1) + loss_g
             loss += ((loss_pixel_3 + loss_tv_3) / self.batch_size_1) + loss_g 
             loss += loss_class
         else:
@@ -98,7 +98,7 @@ class Model(tf.keras.Model):
             loss += ((loss_pixel_3 + loss_tv_3 + loss_hist_3) / self.batch_size_2) + loss_g 
             loss += loss_class
 
-        print('loss', loss)
+        # tf.print('loss', loss)
 
         return loss
 
