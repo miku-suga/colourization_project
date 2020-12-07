@@ -95,9 +95,9 @@ class SemanticAssignmentModule(tf.keras.Model):
         self.gtl_dense_2 = tf.keras.layers.Dense(num_classes)
 
         self.C_conv_1 = tf.keras.layers.Conv1D(
-            1024, self.kernel_size, activation='relu', padding='same')
+            1024, kernel_size=1, activation='relu', padding='valid')
         self.C_conv_2 = tf.keras.layers.Conv1D(
-            1, self.kernel_size, activation='sigmoid', padding='same')
+            1, kernel_size=1, activation='sigmoid', padding='valid')
 
     @tf.function
     def call(self, feat_tl, feat_tr, r_ab, gtl_input, is_testing=False):
