@@ -83,6 +83,7 @@ def main():
 
     train_target_data = prep.get_tf_dataset(batch_size, 'train', training_size)
     train_ref_data = prep.get_tf_dataset(batch_size, 'train', training_size)
+    flip_crop_train_ref_data = prep.get_tf_dataset(batch_size, 'train', training_size)
     test_target_data = prep.get_tf_dataset(
         batch_size, 'test', testing_size).take(1)
     test_ref_data = prep.get_tf_dataset(
@@ -92,14 +93,17 @@ def main():
     discrim = Discriminator()
 
     # We are going to use target label as the train reference.
-    # train MCN without histogram loss
+    # train only MCN without histogram loss
     loss_1 = trainMCN(model, discrim, train_target_data, train_target_data, prefix_cp + '1', noRef=True)
     np.save(prefix + 'loss_1', loss_1)
     model.save_weights(prefix + 'weights_model_1')
     discrim.save_weights(prefix + 'weights_discrim_1')
 
+    flip_crop_train_ref_data = tf.image.random_flip_left_right(flip_crop_train_ref_data, 534234)
+    flip_crop_train_ref_data = tf.image.random_flip_up_down(flip_crop_train_ref_data, 234328)
+
     # train everything
-    loss_2 = trainMCN(model, discrim, train_ref_data, train_target_data, prefix_cp + '2')
+    loss_2 = trainMCN(model, discrim, flip_crop_train_ref_data, train_target_data, prefix_cp + '2')
     np.save(prefix + 'loss_2', loss_2)
     model.save_weights(prefix + 'weights_model_2')
     discrim.save_weights(prefix + 'weights_discrim_2')
