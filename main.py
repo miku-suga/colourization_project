@@ -58,8 +58,6 @@ def trainMCN(model, discrim, ref_data, target_data, cp_prefix, train_log_dir, no
             tf.print("Saving Weights..")
             model.save_weights(cp_prefix + '_model')
             discrim.save_weights(cp_prefix + '_discrim')
-            np.save(cp_prefix + '_loss', loss_list)
-
 
         with train_summary_writer.as_default():
             tf.summary.scalar('coloring_loss', total_loss, step=i)
@@ -67,7 +65,7 @@ def trainMCN(model, discrim, ref_data, target_data, cp_prefix, train_log_dir, no
             tf.summary.scalar('discriminator_fake_output', discrim_fake_out, step=i)
         i += 1
 
-    return loss_list
+    return
 def main():
     BATCH_SIZE = 10
     TRAINING_SIZE = -1
