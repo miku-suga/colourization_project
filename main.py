@@ -7,17 +7,12 @@ from model import Model, Discriminator
 import datetime
 
 
-def trainMCN(model, discrim, ref_data, target_data, cp_prefix, noRef=False):
+def trainMCN(model, discrim, ref_data, target_data, cp_prefix, train_log_dir, noRef=False):
     i = 0
-    loss_list = []
-
-    current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-    train_log_dir = 'logs/gradient_tape/' + current_time + '/train'
     train_summary_writer = tf.summary.create_file_writer(train_log_dir)
 
-    countstep = 0
     for ref_batch, target_batch in zip(ref_data.as_numpy_iterator(), target_data.as_numpy_iterator()):
-        r_l, r_ab, r_hist, r_label = ref_batch
+        r_l, r_ab, r_hist, _ = ref_batch
         t_l, t_ab, _, t_label = target_batch
 
         with tf.GradientTape() as tape:
@@ -46,10 +41,6 @@ def trainMCN(model, discrim, ref_data, target_data, cp_prefix, noRef=False):
         tf.print('\tbatch', i, 'discriminator output =', discrim_fake_out)
         tf.print()
 
-        loss_list.append( (total_loss, discrim_loss, discrim_fake_out) )
-
-        i += 1
-
         gradients = tape.gradient(total_loss, model.trainable_variables)
         model.optimizer.apply_gradients(
             zip(gradients, model.trainable_variables))
@@ -59,27 +50,35 @@ def trainMCN(model, discrim, ref_data, target_data, cp_prefix, noRef=False):
         discrim.optimizer.apply_gradients(
             zip(discrim_gradients, discrim.trainable_variables))
 
-        if i == 3:
-            tf.get_default_graph().finalize()
-            
-        if i % 1000 == 1:
+        if i == 100:
+            tf.profiler.experimental.start('logdir')
+        if i == 200:
+            tf.profiler.experimental.stop()
+        if i % 1000 == 0:
+            tf.print("Saving Weights..")
             model.save_weights(cp_prefix + '_model')
             discrim.save_weights(cp_prefix + '_discrim')
             np.save(cp_prefix + '_loss', loss_list)
 
 
         with train_summary_writer.as_default():
-            tf.summary.scalar('coloring_loss', total_loss, step=countstep)
-            tf.summary.scalar('discriminator_loss', discrim_loss, step=countstep)
-        countstep += 1
+            tf.summary.scalar('coloring_loss', total_loss, step=i)
+            tf.summary.scalar('discriminator_loss', discrim_loss, step=i)
+            tf.summary.scalar('discriminator_fake_output', discrim_fake_out, step=i)
+        i += 1
 
     return loss_list
 def main():
-    batch_size = 2
-    training_size = -1
-    testing_size = 100
-    prefix = 'saved/'
-    prefix_cp = 'checkpoints/'
+    BATCH_SIZE = 10
+    TRAINING_SIZE = -1
+    TESTING_SIZE = 100
+
+    current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+
+    SAVED_DIR = 'logs/saved/'
+    CP_DIR = 'logs/checkpoints/'
+    TRAIN_LOG_DIR = 'logs/gradient_tape/' + current_time + '/train1'
+    TRAIN2_LOG_DIR = 'logs/gradient_tape/' + current_time + '/train2'
     # debugging config
     # tf.config.run_functions_eagerly(True)
     # tf.debugging.enable_check_numerics()
@@ -89,41 +88,39 @@ def main():
     train_target_data = prep.get_tf_dataset(batch_size, 'train', training_size)
     train_ref_data = prep.get_tf_dataset(batch_size, 'train', training_size)
     flip_crop_train_ref_data = prep.get_tf_dataset(batch_size, 'train', training_size)
-    test_target_data = prep.get_tf_dataset(
-        batch_size, 'test', testing_size).take(1)
-    test_ref_data = prep.get_tf_dataset(
-        batch_size, 'test', testing_size).take(1)
 
     model = Model(prep.NUM_CLASSES, prep.IMAGE_SIZE, prep.IMAGE_SIZE)
     discrim = Discriminator()
 
     # We are going to use target label as the train reference.
     # train only MCN without histogram loss
-    loss_1 = trainMCN(model, discrim, train_target_data, train_target_data, prefix_cp + '1', noRef=True)
-    np.save(prefix + 'loss_1', loss_1)
-    model.save_weights(prefix + 'weights_model_1')
-    discrim.save_weights(prefix + 'weights_discrim_1')
+    trainMCN(model, discrim, train_target_data, train_target_data, CP_DIR + '1', TRAIN_LOG_DIR, noRef=True)
+    model.save_weights(SAVED_DIR + 'weights_model_1')
+    discrim.save_weights(SAVED_DIR + 'weights_discrim_1')
 
     flip_crop_train_ref_data = tf.image.random_flip_left_right(flip_crop_train_ref_data, 534234)
     flip_crop_train_ref_data = tf.image.random_flip_up_down(flip_crop_train_ref_data, 234328)
 
     # train everything
-    loss_2 = trainMCN(model, discrim, flip_crop_train_ref_data, train_target_data, prefix_cp + '2')
-    np.save(prefix + 'loss_2', loss_2)
-    model.save_weights(prefix + 'weights_model_2')
-    discrim.save_weights(prefix + 'weights_discrim_2')
+    trainMCN(model, discrim, flip_crop_train_ref_data, train_target_data, CP_DIR + '2', TRAIN2_LOG_DIR)
+    model.save_weights(SAVED_DIR + 'weights_model_2')
+    discrim.save_weights(SAVED_DIR + 'weights_discrim_2')
 
 
     # call model on first 10 test examples
-    tf.print("Training done, visualize result..")
-    for ref_batch, target_batch in zip(test_ref_data.as_numpy_iterator(), test_target_data.as_numpy_iterator()):
-        r_l, r_ab, r_hist, _ = ref_batch
-        t_l, _, _, _ = target_batch
-        _, _, _, fake_img_3 = model(r_hist, r_ab, r_l, t_l)
+    # tf.print("Training done, visualize result..")
+    # test_target_data = prep.get_tf_dataset(
+    #     batch_size, 'test', testing_size).take(1)
+    # test_ref_data = prep.get_tf_dataset(
+    #     batch_size, 'test', testing_size).take(1)
+    # for ref_batch, target_batch in zip(test_ref_data.as_numpy_iterator(), test_target_data.as_numpy_iterator()):
+    #     r_l, r_ab, r_hist, _ = ref_batch
+    #     t_l, _, _, _ = target_batch
+    #     _, _, _, fake_img_3 = model(r_hist, r_ab, r_l, t_l)
 
-        # visualize
-        prep.visualize_results(t_l, fake_img_3)
-        break
+    #     # visualize
+    #     prep.visualize_results(t_l, fake_img_3)
+    #     break
 
 
 if __name__ == '__main__':
