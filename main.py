@@ -59,6 +59,9 @@ def trainMCN(model, discrim, ref_data, target_data, cp_prefix, noRef=False):
         discrim.optimizer.apply_gradients(
             zip(discrim_gradients, discrim.trainable_variables))
 
+        if i == 3:
+            tf.get_default_graph().finalize()
+            
         if i % 1000 == 1:
             model.save_weights(cp_prefix + '_model')
             discrim.save_weights(cp_prefix + '_discrim')
@@ -72,7 +75,7 @@ def trainMCN(model, discrim, ref_data, target_data, cp_prefix, noRef=False):
 
     return loss_list
 def main():
-    batch_size = 10
+    batch_size = 2
     training_size = -1
     testing_size = 100
     prefix = 'saved/'
@@ -80,6 +83,8 @@ def main():
     # debugging config
     # tf.config.run_functions_eagerly(True)
     # tf.debugging.enable_check_numerics()
+    # tf.profiler.experimental.start('logdir')
+    # tf.profiler.experimental.stop()
 
     train_target_data = prep.get_tf_dataset(batch_size, 'train', training_size)
     train_ref_data = prep.get_tf_dataset(batch_size, 'train', training_size)

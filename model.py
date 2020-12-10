@@ -31,6 +31,7 @@ class Model(tf.keras.Model):
 
         self.optimizer = tf.keras.optimizers.Adam(learning_rate=0.0002)
 
+    @tf.function
     def call(self, r_hist, r_ab, r_l, t_l, noRef=False):
         """ get features and output of convolution layers from encoder """
         if noRef:
@@ -60,6 +61,7 @@ class Model(tf.keras.Model):
 
         return g_tl, fake_img_1, fake_img_2, fake_img_3
 
+    @tf.function
     def loss_function(self, t_ab_real, t_ab_out_1, t_ab_out_2, t_ab_out_3, r_h, t_h_out_1, t_h_out_2, t_h_out_3, discrim_logits, g_tl_out, g_tl_real, is_first_round):
         # Classification Loss Function
         loss_class = self.class_weight * \
