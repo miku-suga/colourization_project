@@ -4,11 +4,18 @@ import tensorflow_datasets as tfds
 import numpy as np
 import preprocess as prep
 from model import Model, Discriminator
+import datetime
 
 
 def trainMCN(model, discrim, ref_data, target_data, cp_prefix, noRef=False):
     i = 0
     loss_list = []
+
+    current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    train_log_dir = 'logs/gradient_tape/' + current_time + '/train'
+    train_summary_writer = tf.summary.create_file_writer(train_log_dir)
+
+    countstep = 0
     for ref_batch, target_batch in zip(ref_data.as_numpy_iterator(), target_data.as_numpy_iterator()):
         r_l, r_ab, r_hist, r_label = ref_batch
         t_l, t_ab, _, t_label = target_batch
@@ -57,6 +64,12 @@ def trainMCN(model, discrim, ref_data, target_data, cp_prefix, noRef=False):
             discrim.save_weights(cp_prefix + '_discrim')
             np.save(cp_prefix + '_loss', loss_list)
 
+
+        with train_summary_writer.as_default():
+            tf.summary.scalar('loss', total_loss, step=countstep)
+            # tf.summary.scalar('accuracy', train_accuracy.result(), step=epoch)
+        countstep += 1
+
     return loss_list
 def main():
     batch_size = 10
@@ -90,6 +103,7 @@ def main():
     np.save(prefix + 'loss_2', loss_2)
     model.save_weights(prefix + 'weights_model_2')
     discrim.save_weights(prefix + 'weights_discrim_2')
+
 
     # call model on first 10 test examples
     tf.print("Training done, visualize result..")
