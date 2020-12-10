@@ -79,15 +79,16 @@ class Model(tf.keras.Model):
             (tf.keras.losses.Huber())(t_ab_real, t_ab_out_3)
 
         # Histogram Loss Function
-        loss_hist_1 = self.hist_weight * 2 * \
-            tf.reduce_sum(tf.math.divide_no_nan(
-                tf.square(t_h_out_1 - r_h), (t_h_out_1 + r_h)))
-        loss_hist_2 = self.hist_weight * 2 * \
-            tf.reduce_sum(tf.math.divide_no_nan(
-                tf.square(t_h_out_2 - r_h), (t_h_out_2 + r_h)))
-        loss_hist_3 = self.hist_weight * 2 * \
-            tf.reduce_sum(tf.math.divide_no_nan(
-                tf.square(t_h_out_3 - r_h), (t_h_out_3 + r_h)))
+        if not is_first_round:
+            loss_hist_1 = self.hist_weight * 2 * \
+                tf.reduce_sum(tf.math.divide_no_nan(
+                    tf.square(t_h_out_1 - r_h), (t_h_out_1 + r_h)))
+            loss_hist_2 = self.hist_weight * 2 * \
+                tf.reduce_sum(tf.math.divide_no_nan(
+                    tf.square(t_h_out_2 - r_h), (t_h_out_2 + r_h)))
+            loss_hist_3 = self.hist_weight * 2 * \
+                tf.reduce_sum(tf.math.divide_no_nan(
+                    tf.square(t_h_out_3 - r_h), (t_h_out_3 + r_h)))
 
         # TV REGULARIZATION Loss Function
         loss_tv_1 = self.tv_weight * \

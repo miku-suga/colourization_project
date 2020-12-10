@@ -17,7 +17,7 @@ def trainMCN(model, discrim, ref_data, target_data, cp_prefix, train_log_dir, no
 
         with tf.GradientTape() as tape:
             g_tl, t_ab_out_1, t_ab_out_2, t_ab_out_3 = model(
-                r_hist, r_ab, r_l, t_l)
+                r_hist, r_ab, r_l, t_l, noRef)
 
             output_img = tf.concat([t_l, t_ab_out_3], axis=-1)
             fake_logits = discrim(output_img)
@@ -50,10 +50,10 @@ def trainMCN(model, discrim, ref_data, target_data, cp_prefix, train_log_dir, no
         discrim.optimizer.apply_gradients(
             zip(discrim_gradients, discrim.trainable_variables))
 
-        if i == 100:
-            tf.profiler.experimental.start('logdir')
-        if i == 200:
-            tf.profiler.experimental.stop()
+        # if i == 100:
+        #     tf.profiler.experimental.start(train_log_dir)
+        # if i == 200:
+        #     tf.profiler.experimental.stop()
         if i % 1000 == 0:
             tf.print("Saving Weights..")
             model.save_weights(cp_prefix + '_model')
@@ -67,7 +67,8 @@ def trainMCN(model, discrim, ref_data, target_data, cp_prefix, train_log_dir, no
 
     return
 def main():
-    BATCH_SIZE = 10
+    BATCH_SIZE_1 = 10
+    BATCH_SIZE_2 = 8
     TRAINING_SIZE = -1
     TESTING_SIZE = 100
 
@@ -80,27 +81,26 @@ def main():
     # debugging config
     # tf.config.run_functions_eagerly(True)
     # tf.debugging.enable_check_numerics()
-    # tf.profiler.experimental.start('logdir')
-    # tf.profiler.experimental.stop()
-
-    train_target_data = prep.get_tf_dataset(BATCH_SIZE, 'train', TRAINING_SIZE)
-    train_ref_data = prep.get_tf_dataset(BATCH_SIZE, 'train', TRAINING_SIZE)
-    flip_crop_train_ref_data = prep.get_tf_dataset(BATCH_SIZE, 'train', TRAINING_SIZE)
 
     model = Model(prep.NUM_CLASSES, prep.IMAGE_SIZE, prep.IMAGE_SIZE)
     discrim = Discriminator()
 
     # We are going to use target label as the train reference.
     # train only MCN without histogram loss
+    train_target_data = prep.get_tf_dataset(BATCH_SIZE_1, 'train', TRAINING_SIZE)
     trainMCN(model, discrim, train_target_data, train_target_data, CP_DIR + '1', TRAIN_LOG_DIR, noRef=True)
     model.save_weights(SAVED_DIR + 'weights_model_1')
     discrim.save_weights(SAVED_DIR + 'weights_discrim_1')
 
-    flip_crop_train_ref_data = tf.image.random_flip_left_right(flip_crop_train_ref_data, 534234)
-    flip_crop_train_ref_data = tf.image.random_flip_up_down(flip_crop_train_ref_data, 234328)
-
     # train everything
-    trainMCN(model, discrim, flip_crop_train_ref_data, train_target_data, CP_DIR + '2', TRAIN2_LOG_DIR)
+    train_target_data = prep.get_tf_dataset(BATCH_SIZE_2, 'train', TRAINING_SIZE)
+    train_ref_data = prep.get_tf_dataset(BATCH_SIZE_2, 'train', TRAINING_SIZE)
+
+    # TODO: fix this
+    train_ref_data = tf.image.random_flip_left_right(train_ref_data, 534234)
+    train_ref_data = tf.image.random_flip_up_down(train_ref_data, 234328)
+
+    trainMCN(model, discrim, train_ref_data, train_target_data, CP_DIR + '2', TRAIN2_LOG_DIR)
     model.save_weights(SAVED_DIR + 'weights_model_2')
     discrim.save_weights(SAVED_DIR + 'weights_discrim_2')
 
