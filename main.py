@@ -66,8 +66,8 @@ def trainMCN(model, discrim, ref_data, target_data, cp_prefix, noRef=False):
 
 
         with train_summary_writer.as_default():
-            tf.summary.scalar('loss', total_loss, step=countstep)
-            # tf.summary.scalar('accuracy', train_accuracy.result(), step=epoch)
+            tf.summary.scalar('coloring_loss', total_loss, step=countstep)
+            tf.summary.scalar('discriminator_loss', discrim_loss, step=countstep)
         countstep += 1
 
     return loss_list
