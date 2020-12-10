@@ -85,9 +85,9 @@ def main():
     # tf.profiler.experimental.start('logdir')
     # tf.profiler.experimental.stop()
 
-    train_target_data = prep.get_tf_dataset(batch_size, 'train', training_size)
-    train_ref_data = prep.get_tf_dataset(batch_size, 'train', training_size)
-    flip_crop_train_ref_data = prep.get_tf_dataset(batch_size, 'train', training_size)
+    train_target_data = prep.get_tf_dataset(BATCH_SIZE, 'train', TRAINING_SIZE)
+    train_ref_data = prep.get_tf_dataset(BATCH_SIZE, 'train', TRAINING_SIZE)
+    flip_crop_train_ref_data = prep.get_tf_dataset(BATCH_SIZE, 'train', TRAINING_SIZE)
 
     model = Model(prep.NUM_CLASSES, prep.IMAGE_SIZE, prep.IMAGE_SIZE)
     discrim = Discriminator()
@@ -110,9 +110,9 @@ def main():
     # call model on first 10 test examples
     # tf.print("Training done, visualize result..")
     # test_target_data = prep.get_tf_dataset(
-    #     batch_size, 'test', testing_size).take(1)
+    #     batch_size, 'test', TESTING_SIZE)
     # test_ref_data = prep.get_tf_dataset(
-    #     batch_size, 'test', testing_size).take(1)
+    #     batch_size, 'test', TESTING_SIZE)
     # for ref_batch, target_batch in zip(test_ref_data.as_numpy_iterator(), test_target_data.as_numpy_iterator()):
     #     r_l, r_ab, r_hist, _ = ref_batch
     #     t_l, _, _, _ = target_batch
