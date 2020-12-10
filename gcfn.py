@@ -59,11 +59,10 @@ class GatedFusionModule(tf.keras.Model):
 
 
 class SemanticAssignmentModule(tf.keras.Model):
-    def __init__(self, num_classes, img_height, img_width):
+    def __init__(self, img_height, img_width):
         super(SemanticAssignmentModule, self).__init__()
 
         self.kernel_size = 3
-        self.num_classes = num_classes
 
         self.height = img_height
         self.width = img_width
@@ -91,16 +90,13 @@ class SemanticAssignmentModule(tf.keras.Model):
         self.fa_conv_4_2 = tf.keras.layers.Conv2D(
             512, self.kernel_size, activation='swish', padding='same')
 
-        self.gtl_dense_1 = tf.keras.layers.Dense(512, activation='swish')
-        self.gtl_dense_2 = tf.keras.layers.Dense(num_classes)
-
         self.C_conv_1 = tf.keras.layers.Conv1D(
             1024, kernel_size=1, activation='swish', padding='valid')
         self.C_conv_2 = tf.keras.layers.Conv1D(
             1, kernel_size=1, activation='sigmoid', padding='valid')
 
     @tf.function
-    def call(self, feat_tl, feat_tr, r_ab, gtl_input, is_testing=False):
+    def call(self, feat_tl, feat_tr, r_ab, is_testing=False):
         """ takes in r, t, output of encoder, r_ab and spit out correlation matrix features conf_1,2,3, class output G, and f_s1,2,3 """
 
         assert feat_tl.shape[1:] == (self.height // 2, self.width // 2, 1984)
@@ -130,15 +126,7 @@ class SemanticAssignmentModule(tf.keras.Model):
             self.fa_conv_4_1(align_2[:, ::2, ::2, :])))
         assert align_3.shape[1:] == (self.height // 8, self.width // 8, 512)
 
-        mp = tf.nn.max_pool2d(gtl_input, (gtl_input.shape[1], gtl_input.shape[2]),
-                              strides=1, padding="VALID")
-        assert mp.shape[1:] == (1, 1, 512)
-
-        g_tl = self.gtl_dense_1(tf.reshape(mp, [mp.shape[0], -1]))
-        assert g_tl.shape[1:] == (512)
-        g_tl = self.gtl_dense_2(g_tl)
-
-        return (g_tl, conf, align_1, align_2, align_3)
+        return (conf, align_1, align_2, align_3)
 
     @tf.function
     def correlate(self, t_lum, r_lum):

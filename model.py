@@ -17,8 +17,9 @@ class Model(tf.keras.Model):
         self.decoder_2 = Decoder2()
         self.decoder_3 = Decoder3()
         self.cdm = ColorDistributionModule()
-        self.sam = SemanticAssignmentModule(num_classes, img_height, img_width)
+        self.sam = SemanticAssignmentModule(img_height, img_width)
         self.gfm = GatedFusionModule(img_height, img_width)
+        self.classify = ClassifyImg(num_classes)
 
         self.batch_size_1 = tf.constant(48.0)
         self.batch_size_2 = tf.constant(12.0)
@@ -37,18 +38,19 @@ class Model(tf.keras.Model):
         if noRef:
             feat_rl, feat_tl, enc_output, layer_1, layer_2, layer_3 = self.encoder(
                 r_l, t_l)
+            g_tl = self.classify(enc_output)
             decoder_output1, fake_img_1 = self.decoder_1(
-                0, enc_output, layer_3)
+                0.0, enc_output, layer_3)
             decoder_output2, fake_img_2 = self.decoder_2(
-                0, decoder_output1, layer_2)
-            _, fake_img_3 = self.decoder_3(0, decoder_output2, layer_1)
+                0.0, decoder_output1, layer_2)
+            _, fake_img_3 = self.decoder_3(0.0, decoder_output2, layer_1)
         else:
             feat_rl, feat_tl, enc_output, layer_1, layer_2, layer_3 = self.encoder(
                 r_l, t_l)
-
+            g_tl = self.classify(enc_output)
             f_global1, f_global2, f_global3 = self.cdm(r_hist)
-            g_tl, conf, align_1, align_2, align_3 = self.sam(
-                feat_tl, feat_rl, r_ab, enc_output)
+            conf, align_1, align_2, align_3 = self.sam(
+                feat_tl, feat_rl, r_ab)
 
             gate_out1, gate_out2, gate_out3 = self.gfm(
                 conf, align_1, align_2, align_3, f_global1, f_global2, f_global3)
@@ -124,6 +126,24 @@ class Model(tf.keras.Model):
 
         return loss
 
+class ClassifyImg(tf.keras.Model):
+    def __init__(self, num_classes):
+        super(ClassifyImg, self).__init__()
+
+        self.gtl_dense_1 = tf.keras.layers.Dense(512, activation='swish')
+        self.gtl_dense_2 = tf.keras.layers.Dense(num_classes)
+
+    @tf.function
+    def call(self, gtl_input):
+        mp = tf.nn.max_pool2d(gtl_input, (gtl_input.shape[1], gtl_input.shape[2]),
+                              strides=1, padding="VALID")
+        assert mp.shape[1:] == (1, 1, 512)
+
+        g_tl = self.gtl_dense_1(tf.reshape(mp, [mp.shape[0], -1]))
+        assert g_tl.shape[1:] == (512)
+        g_tl = self.gtl_dense_2(g_tl)
+
+        return g_tl
 
 class Discriminator(tf.keras.Model):
     def __init__(self):
