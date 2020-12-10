@@ -31,48 +31,69 @@ class Model(tf.keras.Model):
 
         self.optimizer = tf.keras.optimizers.Adam(learning_rate=0.0002)
 
-    def call(self, r_hist, r_ab, r_l, t_l, is_testing=False):
+    def call(self, r_hist, r_ab, r_l, t_l, noRef=False):
         """ get features and output of convolution layers from encoder """
-        feat_rl, feat_tl, enc_output, layer_1, layer_2, layer_3 = self.encoder(
-            r_l, t_l)
+        if noRef:
+            feat_rl, feat_tl, enc_output, layer_1, layer_2, layer_3 = self.encoder(
+                r_l, t_l)
+            decoder_output1, fake_img_1 = self.decoder_1(
+                0, enc_output, layer_3)
+            decoder_output2, fake_img_2 = self.decoder_2(
+                0, decoder_output1, layer_2)
+            _, fake_img_3 = self.decoder_3(0, decoder_output2, layer_1)
+        else:
+            feat_rl, feat_tl, enc_output, layer_1, layer_2, layer_3 = self.encoder(
+                r_l, t_l)
 
-        f_global1, f_global2, f_global3 = self.cdm(r_hist)
-        g_tl, conf, align_1, align_2, align_3 = self.sam(
-            feat_tl, feat_rl, r_ab, enc_output)
+            f_global1, f_global2, f_global3 = self.cdm(r_hist)
+            g_tl, conf, align_1, align_2, align_3 = self.sam(
+                feat_tl, feat_rl, r_ab, enc_output)
 
-        gate_out1, gate_out2, gate_out3 = self.gfm(
-            conf, align_1, align_2, align_3, f_global1, f_global2, f_global3)
+            gate_out1, gate_out2, gate_out3 = self.gfm(
+                conf, align_1, align_2, align_3, f_global1, f_global2, f_global3)
 
-        decoder_output1, fake_img_1 = self.decoder_1(
-            gate_out1, enc_output, layer_3)
-        decoder_output2, fake_img_2 = self.decoder_2(
-            gate_out2, decoder_output1, layer_2)
-        _, fake_img_3 = self.decoder_3(
-            gate_out3, decoder_output2, layer_1)
+            decoder_output1, fake_img_1 = self.decoder_1(
+                gate_out1, enc_output, layer_3)
+            decoder_output2, fake_img_2 = self.decoder_2(
+                gate_out2, decoder_output1, layer_2)
+            _, fake_img_3 = self.decoder_3(gate_out3, decoder_output2, layer_1)
 
         return g_tl, fake_img_1, fake_img_2, fake_img_3
 
     def loss_function(self, t_ab_real, t_ab_out_1, t_ab_out_2, t_ab_out_3, r_h, t_h_out_1, t_h_out_2, t_h_out_3, discrim_logits, g_tl_out, g_tl_real, is_first_round):
         # Classification Loss Function
-        loss_class = self.class_weight * tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(g_tl_real, g_tl_out))
+        loss_class = self.class_weight * \
+            tf.reduce_mean(
+                tf.nn.sparse_softmax_cross_entropy_with_logits(g_tl_real, g_tl_out))
 
         # Smooth L1 Loss Function
-        loss_pixel_1 = self.pixel_weight * (tf.keras.losses.Huber())(tf.nn.max_pool(t_ab_real, 4, 4, 'SAME'), t_ab_out_1)
-        loss_pixel_2 = self.pixel_weight * (tf.keras.losses.Huber())(tf.nn.max_pool(t_ab_real, 2, 2, 'SAME'), t_ab_out_2)
-        loss_pixel_3 = self.pixel_weight * (tf.keras.losses.Huber())(t_ab_real, t_ab_out_3) 
+        loss_pixel_1 = self.pixel_weight * \
+            (tf.keras.losses.Huber())(tf.nn.max_pool(
+                t_ab_real, 4, 4, 'SAME'), t_ab_out_1)
+        loss_pixel_2 = self.pixel_weight * \
+            (tf.keras.losses.Huber())(tf.nn.max_pool(
+                t_ab_real, 2, 2, 'SAME'), t_ab_out_2)
+        loss_pixel_3 = self.pixel_weight * \
+            (tf.keras.losses.Huber())(t_ab_real, t_ab_out_3)
 
         # Histogram Loss Function
         loss_hist_1 = self.hist_weight * 2 * \
-            tf.reduce_sum(tf.math.divide_no_nan(tf.square(t_h_out_1 - r_h), (t_h_out_1 + r_h)))
+            tf.reduce_sum(tf.math.divide_no_nan(
+                tf.square(t_h_out_1 - r_h), (t_h_out_1 + r_h)))
         loss_hist_2 = self.hist_weight * 2 * \
-            tf.reduce_sum(tf.math.divide_no_nan(tf.square(t_h_out_2 - r_h), (t_h_out_2 + r_h)))
+            tf.reduce_sum(tf.math.divide_no_nan(
+                tf.square(t_h_out_2 - r_h), (t_h_out_2 + r_h)))
         loss_hist_3 = self.hist_weight * 2 * \
-            tf.reduce_sum(tf.math.divide_no_nan(tf.square(t_h_out_3 - r_h), (t_h_out_3 + r_h))) 
+            tf.reduce_sum(tf.math.divide_no_nan(
+                tf.square(t_h_out_3 - r_h), (t_h_out_3 + r_h)))
 
         # TV REGULARIZATION Loss Function
-        loss_tv_1 = self.tv_weight * tf.reduce_mean(tf.image.total_variation(t_ab_out_1))
-        loss_tv_2 = self.tv_weight * tf.reduce_mean(tf.image.total_variation(t_ab_out_2))
-        loss_tv_3 = self.tv_weight * tf.reduce_mean(tf.image.total_variation(t_ab_out_3))
+        loss_tv_1 = self.tv_weight * \
+            tf.reduce_mean(tf.image.total_variation(t_ab_out_1))
+        loss_tv_2 = self.tv_weight * \
+            tf.reduce_mean(tf.image.total_variation(t_ab_out_2))
+        loss_tv_3 = self.tv_weight * \
+            tf.reduce_mean(tf.image.total_variation(t_ab_out_3))
 
         # generator loss
         loss_g = self.g_weight * tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(
@@ -85,14 +106,17 @@ class Model(tf.keras.Model):
         # tf.print('loss_g', loss_g)
 
         if is_first_round:
-            loss = ((loss_pixel_1 + loss_tv_1) / self.batch_size_1) + loss_g 
+            loss = ((loss_pixel_1 + loss_tv_1) / self.batch_size_1) + loss_g
             loss += ((loss_pixel_2 + loss_tv_2) / self.batch_size_1) + loss_g
-            loss += ((loss_pixel_3 + loss_tv_3) / self.batch_size_1) + loss_g 
+            loss += ((loss_pixel_3 + loss_tv_3) / self.batch_size_1) + loss_g
             loss += loss_class
         else:
-            loss = ((loss_pixel_1 + loss_tv_1 + loss_hist_1) / self.batch_size_2) + loss_g 
-            loss += ((loss_pixel_2 + loss_tv_2 + loss_hist_2) / self.batch_size_2) + loss_g 
-            loss += ((loss_pixel_3 + loss_tv_3 + loss_hist_3) / self.batch_size_2) + loss_g 
+            loss = ((loss_pixel_1 + loss_tv_1 + loss_hist_1) /
+                    self.batch_size_2) + loss_g
+            loss += ((loss_pixel_2 + loss_tv_2 + loss_hist_2) /
+                     self.batch_size_2) + loss_g
+            loss += ((loss_pixel_3 + loss_tv_3 + loss_hist_3) /
+                     self.batch_size_2) + loss_g
             loss += loss_class
 
         return loss
