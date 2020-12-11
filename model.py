@@ -27,7 +27,7 @@ class Model(tf.keras.Model):
         self.pixel_weight = tf.constant(1000.0)
         self.hist_weight = tf.constant(1.0)
         self.class_weight = tf.constant(1.0)
-        self.g_weight = tf.constant(10.0)
+        self.g_weight = tf.constant(5.0)
         self.tv_weight = tf.constant(0.0)
 
         self.optimizer = tf.keras.optimizers.Adam(learning_rate=0.0002)
@@ -147,7 +147,7 @@ class Discriminator(tf.keras.Model):
     def __init__(self):
         super(Discriminator, self).__init__()
 
-        self.optimizer = tf.keras.optimizers.Adam(learning_rate=0.0005)
+        self.optimizer = tf.keras.optimizers.Adam(learning_rate=0.0003)
 
         self.kernel_size = 3
 
