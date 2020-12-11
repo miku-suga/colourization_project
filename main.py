@@ -77,8 +77,9 @@ def trainMCN(model, discrim, ref_data, target_data, cp_prefix, train_log_dir, no
 def main():
     BATCH_SIZE_1 = 30
     BATCH_SIZE_2 = 8
+    BATCH_SIZE_TEST = 8
     TRAINING_SIZE = -1
-    TESTING_SIZE = 10
+    TESTING_SIZE = 16
 
     current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 
@@ -90,13 +91,11 @@ def main():
 
     # command line parser
     parser = argparse.ArgumentParser(description='Train and infer color image with Gray2ColorNet')
-    parser.add_argument('--train1', dest='accumulate', action='store_true',default=max,
-                        help='sum the integers (default: find the max)')
     parser.add_argument('-lm', '--lmodel', dest='load_model_dir', help='load a saved model from the path')
     parser.add_argument('-ld', '--ldiscrim', dest='load_discrim_dir', help='load a saved discriminator from the path')
-    parser.add_argument('-rv', '--runtest', dest='run_test', action='store_true', help='run a test visualization')
-    parser.add_argument('-r1', '--runtrain1', dest='run_train_1', action='store_true', help='run a first training')
-    parser.add_argument('-r2', '--runtrain2', dest='run_train_2', action='store_true', help='run a second training')
+    parser.add_argument('-rv', '--test', dest='run_test', action='store_true', help='run the test visualization')
+    parser.add_argument('-r1', '--train1', dest='run_train_1', action='store_true', help='run the first training')
+    parser.add_argument('-r2', '--train2', dest='run_train_2', action='store_true', help='run the second training')
     args = parser.parse_args()
 
     # debugging config
@@ -142,20 +141,22 @@ def main():
         # call model on first 10 test examples
         tf.print("Training done, visualize result..")
         test_target_data = prep.get_tf_dataset(
-            batch_size, 'test', TESTING_SIZE)
+            BATCH_SIZE_TEST, 'test', TESTING_SIZE)
         test_ref_data = prep.get_tf_dataset(
-            batch_size, 'test', TESTING_SIZE)
+            BATCH_SIZE_TEST, 'test', TESTING_SIZE)
 
         i = 0
         for ref_batch, target_batch in zip(test_ref_data.as_numpy_iterator(), test_target_data.as_numpy_iterator()):
             r_l, r_ab, r_hist, _ = ref_batch
             t_l, _, _, _ = target_batch
-            _, _, _, fake_img_3 = model(r_hist, r_ab, r_l, t_l)
+            _, _, _, out_ab = model(r_hist, r_ab, r_l, t_l)
 
-            with train_summary_writer.as_default():
+            ref_img = prep.lab2rgb_norm(r_l, r_ab)
+            out_img = prep.lab2rgb_norm(t_l, out_ab)
+            with test_summary_writer.as_default():
                 tf.summary.image('target_image', t_l, step=i)
-                tf.summary.image('reference_image', r_l, r_ab, step=i)
-                tf.summary.image('output_image', fake_img_3, step=i)
+                tf.summary.image('reference_image', ref_img, step=i)
+                tf.summary.image('output_image', out_img, step=i)
 
             i += 1
             # visualize
