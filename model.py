@@ -27,8 +27,8 @@ class Model(tf.keras.Model):
         self.pixel_weight = tf.constant(1000.0)
         self.hist_weight = tf.constant(1.0)
         self.class_weight = tf.constant(1.0)
-        self.g_weight = tf.constant(0.1)
-        self.tv_weight = tf.constant(10.0)
+        self.g_weight = tf.constant(1.0)
+        self.tv_weight = tf.constant(0.1)
 
         self.optimizer = tf.keras.optimizers.Adam(learning_rate=0.0002)
 
@@ -124,7 +124,7 @@ class Model(tf.keras.Model):
                      self.batch_size_2) + loss_g
             loss += loss_class
 
-        return loss
+        return loss, loss_class
 
 class ClassifyImg(tf.keras.Model):
     def __init__(self, num_classes):
@@ -149,7 +149,7 @@ class Discriminator(tf.keras.Model):
     def __init__(self):
         super(Discriminator, self).__init__()
 
-        self.optimizer = tf.keras.optimizers.Adam(learning_rate=0.0003)
+        self.optimizer = tf.keras.optimizers.Adam(learning_rate=0.0002)
 
         self.kernel_size = 3
 
