@@ -21,14 +21,14 @@ class Model(tf.keras.Model):
         self.gfm = GatedFusionModule(img_height, img_width)
         self.classify = ClassifyImg(num_classes)
 
-        self.batch_size_1 = tf.constant(48.0)
-        self.batch_size_2 = tf.constant(12.0)
+        self.batch_size_1 = tf.constant(30.0)
+        self.batch_size_2 = tf.constant(8.0)
 
         self.pixel_weight = tf.constant(1000.0)
         self.hist_weight = tf.constant(1.0)
         self.class_weight = tf.constant(1.0)
-        self.g_weight = tf.constant(1.0)
-        self.tv_weight = tf.constant(0.1)
+        self.g_weight = tf.constant(10.0)
+        self.tv_weight = tf.constant(0.0)
 
         self.optimizer = tf.keras.optimizers.Adam(learning_rate=0.0002)
 
@@ -81,6 +81,7 @@ class Model(tf.keras.Model):
             (tf.keras.losses.Huber())(t_ab_real, t_ab_out_3)
 
         # Histogram Loss Function
+        loss_hist_3 = 0.0
         if not is_first_round:
             loss_hist_1 = self.hist_weight * 2 * \
                 tf.reduce_sum(tf.math.divide_no_nan(
@@ -104,25 +105,22 @@ class Model(tf.keras.Model):
         loss_g = self.g_weight * tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(
             labels=tf.ones_like(discrim_logits), logits=discrim_logits))
 
-        # tf.print('loss_class', loss_class)
-        # tf.print('loss_pixel', loss_pixel_3)
-        # tf.print('loss_hist', loss_hist_3)
-        # tf.print('loss_tv', loss_tv_3)
-        # tf.print('loss_g', loss_g)
+        tf.print('wighted loss_class', loss_class)
+        tf.print('wighted loss_pixel', loss_pixel_3)
+        tf.print('wighted loss_hist', loss_hist_3)
+        tf.print('wighted loss_tv', loss_tv_3)
+        tf.print('wighted loss_g', loss_g)
 
         if is_first_round:
-            loss = ((loss_pixel_1 + loss_tv_1) / self.batch_size_1) + loss_g
-            loss += ((loss_pixel_2 + loss_tv_2) / self.batch_size_1) + loss_g
-            loss += ((loss_pixel_3 + loss_tv_3) / self.batch_size_1) + loss_g
-            loss += loss_class
+            loss = loss_pixel_1 + loss_tv_1
+            loss += loss_pixel_2 + loss_tv_2
+            loss += loss_pixel_3 + loss_tv_3
+            loss += (loss_class + loss_g) * 3
         else:
-            loss = ((loss_pixel_1 + loss_tv_1 + loss_hist_1) /
-                    self.batch_size_2) + loss_g
-            loss += ((loss_pixel_2 + loss_tv_2 + loss_hist_2) /
-                     self.batch_size_2) + loss_g
-            loss += ((loss_pixel_3 + loss_tv_3 + loss_hist_3) /
-                     self.batch_size_2) + loss_g
-            loss += loss_class
+            loss = loss_pixel_1 + loss_tv_1 + loss_hist_1/self.batch_size_2
+            loss += loss_pixel_2 + loss_tv_2 + loss_hist_2/self.batch_size_2
+            loss += loss_pixel_3 + loss_tv_3 + loss_hist_3/self.batch_size_2
+            loss += (loss_class + loss_g) * 3
 
         return loss, loss_class
 
@@ -149,7 +147,7 @@ class Discriminator(tf.keras.Model):
     def __init__(self):
         super(Discriminator, self).__init__()
 
-        self.optimizer = tf.keras.optimizers.Adam(learning_rate=0.0002)
+        self.optimizer = tf.keras.optimizers.Adam(learning_rate=0.0005)
 
         self.kernel_size = 3
 

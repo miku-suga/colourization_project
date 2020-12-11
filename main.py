@@ -72,7 +72,7 @@ def trainMCN(model, discrim, ref_data, target_data, cp_prefix, train_log_dir, no
             # output image samples
             if i % 200 == 0:
                 ref_img = prep.lab2rgb_norm(r_l, r_ab)
-                out_img = prep.lab2rgb_norm(t_l, t_ab_out_3)
+                out_img = prep.lab2rgb_norm(tf.zeros_like(t_l), t_ab_out_3)
                 
                 tf.summary.image('target_image', t_l, step=j)
                 tf.summary.image('reference_image', ref_img, step=j)
