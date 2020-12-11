@@ -27,7 +27,7 @@ class Model(tf.keras.Model):
         self.pixel_weight = tf.constant(1000.0)
         self.hist_weight = tf.constant(1.0)
         self.class_weight = tf.constant(1.0)
-        self.g_weight = tf.constant(10.0)
+        self.g_weight = tf.constant(5.0)
         self.tv_weight = tf.constant(0.0)
 
         self.optimizer = tf.keras.optimizers.Adam(learning_rate=0.0002)
@@ -102,11 +102,10 @@ class Model(tf.keras.Model):
             tf.reduce_mean(tf.image.total_variation(t_ab_out_3))
 
         # generator loss
-        loss_g = self.g_weight * tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(
-            labels=tf.ones_like(discrim_logits), logits=discrim_logits))
+        loss_g = - self.g_weight * tf.reduce_mean(discrim_logits)
 
         tf.print('wighted loss_class', loss_class)
-        tf.print('wighted loss_pixel', loss_pixel_3)
+        tf.print('wighted loss_pixel', loss_pixel_1, loss_pixel_2, loss_pixel_3)
         tf.print('wighted loss_hist', loss_hist_3)
         tf.print('wighted loss_tv', loss_tv_3)
         tf.print('wighted loss_g', loss_g)
@@ -115,12 +114,12 @@ class Model(tf.keras.Model):
             loss = loss_pixel_1 + loss_tv_1
             loss += loss_pixel_2 + loss_tv_2
             loss += loss_pixel_3 + loss_tv_3
-            loss += (loss_class + loss_g) * 3
+            loss += loss_class + loss_g
         else:
             loss = loss_pixel_1 + loss_tv_1 + loss_hist_1/self.batch_size_2
             loss += loss_pixel_2 + loss_tv_2 + loss_hist_2/self.batch_size_2
             loss += loss_pixel_3 + loss_tv_3 + loss_hist_3/self.batch_size_2
-            loss += (loss_class + loss_g) * 3
+            loss += loss_class + loss_g
 
         return loss, loss_class
 
@@ -147,7 +146,7 @@ class Discriminator(tf.keras.Model):
     def __init__(self):
         super(Discriminator, self).__init__()
 
-        self.optimizer = tf.keras.optimizers.Adam(learning_rate=0.0005)
+        self.optimizer = tf.keras.optimizers.Adam(learning_rate=0.0004)
 
         self.kernel_size = 3
 
@@ -168,6 +167,7 @@ class Discriminator(tf.keras.Model):
         self.conv_4_2 = tf.keras.layers.Conv2D(
             256, self.kernel_size, activation='swish', padding='same')
 
+        self.layer_norm = tf.keras.layers.LayerNormalization()
         self.dense_1 = tf.keras.layers.Dense(512)
         self.dense_1_relu = tf.keras.layers.LeakyReLU(alpha=0.2)
         self.dense_2 = tf.keras.layers.Dense(512)
@@ -190,16 +190,38 @@ class Discriminator(tf.keras.Model):
         out = tf.nn.max_pool2d(out, 2, strides=2, padding='VALID')
 
         out = tf.reshape(out, [out.shape[0], -1])
+        out = self.layer_norm(out)
         out = self.dense_1_relu(self.dense_1(out))
         out = self.dense_2_relu(self.dense_2(out))
         out = self.dense_3(out)
 
         return out
 
+    def gradient_penalty(self, data_fake, data_real):
+        alpha = tf.random.uniform(
+            shape=[len(data_real), 1, 1, 1], 
+            minval=0.,
+            maxval=1.
+        )
+
+        interpolates = data_real + alpha * (data_fake - data_real)
+        with tf.GradientTape() as t:
+            t.watch(interpolates)
+            pred = self(interpolates)
+            
+        gradients = t.gradient(pred, [interpolates])[0]
+
+        slopes = tf.sqrt(tf.reduce_sum(tf.square(gradients), axis=[1, 2, 3]))
+        gradient_penalty = tf.reduce_mean((slopes-1.)**2)
+
+        return gradient_penalty
+
+    # From WGAN-GP (Improved Training of Wasserstein GANs) paper
     @tf.function
-    def loss_function(self, logits_fake, logits_real):
-        D_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(
-            labels=tf.zeros_like(logits_fake), logits=logits_fake))
-        D_loss += tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(
-            labels=tf.ones_like(logits_real), logits=logits_real))
-        return D_loss
+    def loss_function(self, logits_fake, logits_real, gradient_penalty):
+        LAMBDA = 10
+
+        disc_cost = tf.reduce_mean(logits_fake) - tf.reduce_mean(logits_real)
+        disc_cost += LAMBDA*gradient_penalty
+
+        return disc_cost

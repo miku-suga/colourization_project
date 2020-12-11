@@ -37,9 +37,15 @@ def trainMCN(model, discrim, ref_data, target_data, cp_prefix, train_log_dir, no
                                              r_hist, t_h_out_1, t_h_out_2, t_h_out_3, fake_logits, g_tl, t_label, noRef)
 
         with tf.GradientTape() as tape_discrim:
-            fake_logits = discrim(tf.stop_gradient(output_img))
-            real_logits = discrim(tf.concat([r_l, r_ab], axis=-1))
-            discrim_loss = discrim.loss_function(fake_logits, real_logits)
+            data_fake = tf.stop_gradient(output_img)
+            data_real = tf.concat([r_l, r_ab], axis=-1)
+
+            fake_logits = discrim(data_fake)
+            real_logits = discrim(data_real)
+
+            gp = discrim.gradient_penalty(data_fake, data_real)
+
+            discrim_loss = discrim.loss_function(fake_logits, real_logits, gp)
 
         discrim_fake_out = tf.reduce_mean(tf.sigmoid(fake_logits))
         tf.print('\tbatch', i, 'coloring loss =', total_loss)
@@ -91,12 +97,6 @@ def trainMCN(model, discrim, ref_data, target_data, cp_prefix, train_log_dir, no
 
 
 def main():
-    BATCH_SIZE_1 = 30
-    BATCH_SIZE_2 = 8
-    BATCH_SIZE_TEST = 8
-    TRAINING_SIZE = -1
-    TESTING_SIZE = 16
-
     current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 
     SAVED_DIR = 'logs/saved/' + current_time + '/'
@@ -112,11 +112,25 @@ def main():
     parser.add_argument('-r', '--test', dest='run_test', help='run the test visualization')
     parser.add_argument('-t1', '--train1', dest='run_train_1', action='store_true', help='run the first training')
     parser.add_argument('-t2', '--train2', dest='run_train_2', action='store_true', help='run the second training')
+    parser.add_argument('-s', '--small', dest='small', action='store_true', help='small batch size for a local debugging run')
     args = parser.parse_args()
 
     # debugging config
     # tf.config.run_functions_eagerly(True)
     # tf.debugging.enable_check_numerics()
+
+    if args.small:
+        BATCH_SIZE_1 = 4
+        BATCH_SIZE_2 = 2
+        BATCH_SIZE_TEST = 8
+        TRAINING_SIZE = 100
+        TESTING_SIZE = 16
+    else:
+        BATCH_SIZE_1 = 30
+        BATCH_SIZE_2 = 8
+        BATCH_SIZE_TEST = 8
+        TRAINING_SIZE = -1
+        TESTING_SIZE = 16
 
     model = Model(prep.NUM_CLASSES, prep.IMAGE_SIZE, prep.IMAGE_SIZE)
     discrim = Discriminator()
