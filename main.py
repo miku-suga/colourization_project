@@ -21,9 +21,15 @@ def trainMCN(model, discrim, ref_data, target_data, cp_prefix, train_log_dir, no
 
             output_img = tf.concat([t_l, t_ab_out_3], axis=-1)
             fake_logits = discrim(output_img)
-            t_h_out_1 = prep.get_histrogram(t_ab_out_1)
-            t_h_out_2 = prep.get_histrogram(t_ab_out_2)
-            t_h_out_3 = prep.get_histrogram(t_ab_out_3)
+
+            if noRef:
+                t_h_out_1 = None
+                t_h_out_2 = None
+                t_h_out_3 = None
+            else:
+                t_h_out_1 = prep.get_histrogram(t_ab_out_1)
+                t_h_out_2 = prep.get_histrogram(t_ab_out_2)
+                t_h_out_3 = prep.get_histrogram(t_ab_out_3)
 
             total_loss = model.loss_function(t_ab, t_ab_out_1, t_ab_out_2, t_ab_out_3,
                                              r_hist, t_h_out_1, t_h_out_2, t_h_out_3, fake_logits, g_tl, t_label, noRef)
