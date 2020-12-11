@@ -10,6 +10,7 @@ import argparse
 
 def trainMCN(model, discrim, ref_data, target_data, cp_prefix, train_log_dir, noRef=False):
     i = 0
+    j = 0
     train_summary_writer = tf.summary.create_file_writer(train_log_dir)
 
     for ref_batch, target_batch in zip(ref_data.as_numpy_iterator(), target_data.as_numpy_iterator()):
@@ -73,9 +74,10 @@ def trainMCN(model, discrim, ref_data, target_data, cp_prefix, train_log_dir, no
                 ref_img = prep.lab2rgb_norm(r_l, r_ab)
                 out_img = prep.lab2rgb_norm(t_l, t_ab_out_3)
                 
-                tf.summary.image('target_image', t_l, step=i//500)
-                tf.summary.image('reference_image', ref_img, step=i//500)
-                tf.summary.image('output_image', out_img, step=i//500)
+                tf.summary.image('target_image', t_l, step=j)
+                tf.summary.image('reference_image', ref_img, step=j)
+                tf.summary.image('output_image', out_img, step=j)
+                j += 1
             
             # loss plot
             tf.summary.scalar('coloring_loss', total_loss, step=i)

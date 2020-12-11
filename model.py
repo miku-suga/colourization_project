@@ -27,8 +27,8 @@ class Model(tf.keras.Model):
         self.pixel_weight = tf.constant(1000.0)
         self.hist_weight = tf.constant(1.0)
         self.class_weight = tf.constant(1.0)
-        self.g_weight = tf.constant(0.1)
-        self.tv_weight = tf.constant(10.0)
+        self.g_weight = tf.constant(1.0)
+        self.tv_weight = tf.constant(0.1)
 
         self.optimizer = tf.keras.optimizers.Adam(learning_rate=0.0002)
 
