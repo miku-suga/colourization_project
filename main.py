@@ -59,16 +59,28 @@ def trainMCN(model, discrim, ref_data, target_data, cp_prefix, train_log_dir, no
         #     tf.profiler.experimental.start(train_log_dir)
         # if i == 200:
         #     tf.profiler.experimental.stop()
-        if i % 1000 == 999:
-            tf.print("Saving Weights..")
-            model.save_weights(cp_prefix + '_model')
-            discrim.save_weights(cp_prefix + '_discrim')
 
         with train_summary_writer.as_default():
+            # weight checkpoint
+            if i % 1000 == 999:
+                tf.print("Saving Weights..")
+                model.save_weights(cp_prefix + '_model')
+                discrim.save_weights(cp_prefix + '_discrim')
+
+            # output image samples
+            if i % 500 == 0:
+                ref_img = prep.lab2rgb_norm(r_l, r_ab)
+                out_img = prep.lab2rgb_norm(t_l, t_ab_out_3)
+                
+                tf.summary.image('target_image', t_l, step=i//500)
+                tf.summary.image('reference_image', ref_img, step=i//500)
+                tf.summary.image('output_image', out_img, step=i//500)
+            
+            # loss plot
             tf.summary.scalar('coloring_loss', total_loss, step=i)
             tf.summary.scalar('discriminator_loss', discrim_loss, step=i)
             tf.summary.scalar('discriminator_fake_output',
-                              discrim_fake_out, step=i)
+                                discrim_fake_out, step=i)
         i += 1
 
     return
@@ -150,8 +162,10 @@ def main():
             r_l, r_ab, r_hist, _ = ref_batch
             t_l, _, _, _ = target_batch
             if args.run_test == '1':
+                print("Run test with MCN only")
                 _, _, _, out_ab = model(r_hist, r_ab, r_l, t_l, True)
             else:
+                print("Run full test")
                 _, _, _, out_ab = model(r_hist, r_ab, r_l, t_l)
 
             # visualize
