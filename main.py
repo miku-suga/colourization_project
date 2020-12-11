@@ -32,7 +32,7 @@ def trainMCN(model, discrim, ref_data, target_data, cp_prefix, train_log_dir, no
                 t_h_out_2 = prep.get_histrogram(t_ab_out_2)
                 t_h_out_3 = prep.get_histrogram(t_ab_out_3)
 
-            total_loss = model.loss_function(t_ab, t_ab_out_1, t_ab_out_2, t_ab_out_3,
+            total_loss, loss_class = model.loss_function(t_ab, t_ab_out_1, t_ab_out_2, t_ab_out_3,
                                              r_hist, t_h_out_1, t_h_out_2, t_h_out_3, fake_logits, g_tl, t_label, noRef)
 
         with tf.GradientTape() as tape_discrim:
@@ -42,6 +42,7 @@ def trainMCN(model, discrim, ref_data, target_data, cp_prefix, train_log_dir, no
 
         discrim_fake_out = tf.reduce_mean(tf.sigmoid(fake_logits))
         tf.print('\tbatch', i, 'coloring loss =', total_loss)
+        tf.print('\tbatch', i, 'classification loss =', loss_class)
         tf.print('\tbatch', i, 'discriminator loss =', discrim_loss)
         tf.print('\tbatch', i, 'discriminator output =', discrim_fake_out)
         tf.print()
@@ -68,7 +69,7 @@ def trainMCN(model, discrim, ref_data, target_data, cp_prefix, train_log_dir, no
                 discrim.save_weights(cp_prefix + '_discrim')
 
             # output image samples
-            if i % 500 == 0:
+            if i % 200 == 0:
                 ref_img = prep.lab2rgb_norm(r_l, r_ab)
                 out_img = prep.lab2rgb_norm(t_l, t_ab_out_3)
                 
@@ -78,6 +79,7 @@ def trainMCN(model, discrim, ref_data, target_data, cp_prefix, train_log_dir, no
             
             # loss plot
             tf.summary.scalar('coloring_loss', total_loss, step=i)
+            tf.summary.scalar('classification_loss', loss_class, step=i)
             tf.summary.scalar('discriminator_loss', discrim_loss, step=i)
             tf.summary.scalar('discriminator_fake_output',
                                 discrim_fake_out, step=i)
