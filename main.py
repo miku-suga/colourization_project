@@ -139,10 +139,13 @@ def main():
         train_ref_data = prep.get_tf_dataset(BATCH_SIZE_2, 'train', TRAINING_SIZE)
 
         # TODO: fix this
-        train_ref_data = tf.image.random_flip_left_right(train_ref_data, 534234)
-        train_ref_data = tf.image.random_flip_up_down(train_ref_data, 234328)
+        ref_dataset = tf.data.Dataset(train_ref_data)
+        for element in ref_dataset:
+            element = tf.image.random_flip_left_right(element)
+            element = tf.image.random_flip_up_down(element)
+            element = tf.keras.preprocessing.image.random_rotation(element, 180, row_axis=0, col_axis=1, channel_axis=2)
 
-        trainMCN(model, discrim, train_ref_data,
+        trainMCN(model, discrim, ref_dataset,
                 train_target_data, CP_DIR + '2', TRAIN2_LOG_DIR)
         model.save_weights(SAVED_DIR + 'weights_model_2')
         discrim.save_weights(SAVED_DIR + 'weights_discrim_2')
