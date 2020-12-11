@@ -87,7 +87,7 @@ def main():
 
     # We are going to use target label as the train reference.
     # train only MCN without histogram loss
-    train_target_data = prep.get_tf_dataset(BATCH_SIZE_1, 'train', TRAINING_SIZE)
+    train_target_data = prep.get_tf_dataset(BATCH_SIZE_1, 'train', TRAINING_SIZE, False)
     trainMCN(model, discrim, train_target_data, train_target_data, CP_DIR + '1', TRAIN_LOG_DIR, noRef=True)
     model.save_weights(SAVED_DIR + 'weights_model_1')
     discrim.save_weights(SAVED_DIR + 'weights_discrim_1')
